@@ -250,10 +250,10 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     // 3. Assert Risk Hunter with this diff and changedFiles finds NO risk in the skipped file
     const invariant: BusinessInvariant = {
       id: 'INV-001',
-      ruleId: 'RULE-001',
-      description: 'At most one refund per idempotency key',
+      humanText: 'At most one refund per idempotency key',
       predicate: 'count(refunds) <= 1',
-      severity: 'CRITICAL',
+      scope: 'Payment & Settlement Processing',
+      assumptions: ['Idempotency key must be unique.'],
     };
     const riskResult = await RiskHunterAgent.analyze([invariant], pr.diff, pr.changedFiles);
     for (const finding of riskResult.findings) {
