@@ -2,6 +2,7 @@ import { AnalysisResult, StageTrace } from '../schemas/agent-schemas';
 import { RequirementAgent } from './requirement-agent';
 import { RiskHunterAgent } from './risk-agent';
 import { VerificationPlannerAgent } from './verification-agent';
+import { PRCoverageMetadata } from '../github/pr-reader';
 
 export interface AnalysisInput {
   businessRule: string;
@@ -10,10 +11,12 @@ export interface AnalysisInput {
   sourceSha?: string;
   codeDiff?: string;
   filePaths?: string[];
+  prCoverage?: PRCoverageMetadata;
   prContext?: {
     title: string;
     description: string;
     files: string[];
+    coverage?: PRCoverageMetadata;
   };
 }
 
@@ -106,6 +109,17 @@ export class AgentOrchestrator {
       );
     } else {
       notes.push(`Neural inference executed via model: ${modelUsed}.`);
+    }
+
+    // Partial analysis coverage note
+    if (input.prCoverage?.isPartialAnalysis) {
+      const c = input.prCoverage;
+      notes.push(
+        `Partial Analysis: This PR contains ${c.totalFiles} changed files. ` +
+        `FlowGuard analysed the ${c.analyzedFiles} most relevant source files and skipped ${c.skippedFiles} ` +
+        `non-code or lower-priority files. ` +
+        `Selection strategy: ${c.selectionStrategy}.`
+      );
     }
 
     notes.push(

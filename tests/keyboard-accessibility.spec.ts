@@ -63,8 +63,8 @@ test.describe('Keyboard Navigation & Accessibility (WCAG 2.1 AA)', () => {
     await expect(paymentPreset).toBeFocused();
     await page.keyboard.press('Enter');
 
-    // Verify snippet is populated
-    await expect(snippetInput).not.toHaveValue('');
+    // Verify snippet is populated (wait for React state update)
+    await expect(snippetInput).not.toHaveValue('', { timeout: 3000 });
 
     // 7. Tab to launch button and activate via Space/Enter key
     await launchBtn.focus();

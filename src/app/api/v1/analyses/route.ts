@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AgentOrchestrator } from '@/lib/agents/orchestrator';
-import { GitHubPRReader } from '@/lib/github/pr-reader';
+import { GitHubPRReader, PRCoverageMetadata } from '@/lib/github/pr-reader';
 
 const AnalysisRequestSchema = z
   .object({
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     let diff = codeSnippet || '';
     let files = filePaths || [];
     let prContext: any = undefined;
+    let prCoverage: PRCoverageMetadata | undefined = undefined;
     let sourceSha = 'manual:input';
     let sourceReference = 'Manual Code Input';
     let sourceType: 'GITHUB_PR' | 'MANUAL_CODE' = 'MANUAL_CODE';
@@ -59,10 +60,12 @@ export async function POST(req: NextRequest) {
         diff = pr.diff;
         files = pr.changedFiles;
         sourceSha = pr.headSha;
+        prCoverage = pr.coverage;
         prContext = {
           title: pr.title,
           description: pr.description,
           files: pr.changedFiles,
+          coverage: pr.coverage,
         };
       } catch (err: any) {
         return NextResponse.json(
@@ -85,6 +88,7 @@ export async function POST(req: NextRequest) {
       codeDiff: diff,
       filePaths: files,
       prContext,
+      prCoverage,
     });
 
     return NextResponse.json(result, { status: 200 });

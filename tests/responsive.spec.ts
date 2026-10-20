@@ -134,9 +134,9 @@ test.describe('Responsive Layout & Viewport Verification Matrix', () => {
         await expect(presetBtn).toBeVisible();
         await presetBtn.click();
 
-        // Verify snippet is loaded
+        // Verify snippet is loaded (wait for React state update)
         const snippet = page.locator('#code-snippet-input');
-        await expect(snippet).not.toHaveValue('');
+        await expect(snippet).not.toHaveValue('', { timeout: 3000 });
 
         // Launch Multi-Agent Analysis
         const launchBtn = page.locator('#btn-launch-analysis');

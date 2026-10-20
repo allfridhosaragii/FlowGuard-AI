@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   FileCode,
   FlaskConical,
+  SplitSquareHorizontal,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AnalysisResult } from '@/lib/schemas/agent-schemas';
@@ -229,7 +230,7 @@ export default function AnalysisWorkspacePage() {
                 </p>
               )}
               <div className="flex items-center justify-between text-[11px] text-muted">
-                <span>Read-only fetch. Max 100KB diff, &le;20 files.</span>
+                <span>Read-only fetch. Max 200 KB diff, partial analysis for large PRs.</span>
                 <button
                   type="button"
                   id="btn-load-sample-pr"
@@ -423,11 +424,22 @@ export default function AnalysisWorkspacePage() {
                   <span className="text-[11px] font-mono text-muted block">
                     Run ID: {result.runId}
                   </span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={result.verdict} size="md" />
                     <span className="text-xs font-semibold text-foreground">
                       Source: {result.sourceType === 'GITHUB_PR' ? 'GitHub PR' : 'Code Input'}
                     </span>
+                    {result.notes.some((n) => n.startsWith('Partial Analysis:')) && (
+                      <span
+                        id="partial-analysis-badge"
+                        data-testid="partial-analysis-badge"
+                        title="Not all files in this PR were analysed — see Transparency section below"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/15 text-warning border border-warning/30"
+                      >
+                        <SplitSquareHorizontal className="w-3 h-3" />
+                        Partial Analysis
+                      </span>
+                    )}
                   </div>
                 </div>
 
