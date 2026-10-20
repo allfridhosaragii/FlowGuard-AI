@@ -100,6 +100,16 @@ npm run test:watch
   - `E2E-07 (LAB-007)`: Empty idempotency key rejected with actionable validation and clears previous report.
   - `E2E-08 (ANA-004)`: Empty code snippet rejected before analysis without fake report.
   - `E2E-09 (UX-001)`: Mobile viewport (390x844) supports all primary user flows.
+- **`tests/keyboard-accessibility.spec.ts` (4 tests)**:
+  - `A11Y-01`: Skip-to-main-content landmark navigation via first Tab key press (WCAG 2.4.1).
+  - `A11Y-02 (UX-002)`: Full keyboard focus verification (`toBeFocused()`) on Code Snippet, Business Rule, and Launch Multi-Agent Analysis button with Tab, Shift+Tab, and Enter/Space activation.
+  - `A11Y-03`: Verification Lab keyboard traversal across radio fixtures, concurrency levels, form inputs, and test assertion copy.
+  - `A11Y-04`: Mobile navigation menu keyboard focus, ARIA expanded state, and Escape key dismissal with focus restoration.
+- **`tests/responsive.spec.ts` (20 tests)**:
+  - Exhaustive 5-viewport verification matrix (`320×568`, `375×667`, `390×844`, `768×1024`, and `1440×900`).
+  - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`).
+  - Full primary user flows (Homepage, Verification Lab, PR Analysis, and responsive navigation) on every viewport.
+  - Automatic screenshot evidence artifacts saved to `test-results/screenshots/`.
 
 ---
 

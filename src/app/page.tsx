@@ -17,19 +17,19 @@ export default function HomePage() {
     <div className="space-y-20 py-12 px-4 sm:px-6 max-w-[1160px] mx-auto">
       {/* Hero Section */}
       <section className="text-center space-y-6 pt-6 sm:pt-12 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-accent/10 text-accent border border-accent/25">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          TestSprite Hackathon Season 4 Candidate
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-accent/10 text-accent border border-accent/25 max-w-full">
+          <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate sm:whitespace-normal">TestSprite Hackathon Season 4 Candidate</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
           Don&apos;t just review code.{' '}
           <span className="text-accent underline decoration-accent/30 underline-offset-8">
             Prove it works.
           </span>
         </h1>
 
-        <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
           Traditional linters check syntax and types, but miss critical runtime regressions. FlowGuard AI audits code changes against formal business rules, detects concurrency flaws, and produces reproducible verification evidence.
         </p>
 
@@ -37,7 +37,8 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link
             href="/lab"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors shadow-subtle group"
+            id="cta-open-lab"
+            className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors shadow-subtle group focus-visible:ring-2 focus-visible:ring-accent"
           >
             <FlaskConical className="w-5 h-5 text-white/90" />
             <span>Open Verification Lab</span>
@@ -46,7 +47,8 @@ export default function HomePage() {
 
           <Link
             href="/analyze"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface text-foreground font-medium hover:bg-surface-muted border border-border transition-colors shadow-subtle"
+            id="cta-analyze-pr"
+            className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface text-foreground font-medium hover:bg-surface-muted border border-border transition-colors shadow-subtle focus-visible:ring-2 focus-visible:ring-accent"
           >
             <GitPullRequest className="w-5 h-5 text-accent" />
             <span>Analyze Pull Request</span>

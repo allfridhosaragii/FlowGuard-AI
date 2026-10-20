@@ -169,10 +169,13 @@ export default function AnalysisWorkspacePage() {
             <div className="flex gap-1">
               <button
                 type="button"
+                id="tab-code-snippet"
+                role="tab"
+                aria-selected={activeTab === 'snippet'}
                 onClick={() => setActiveTab('snippet')}
-                className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
                   activeTab === 'snippet'
-                    ? 'bg-accent text-white'
+                    ? 'bg-accent text-white font-semibold'
                     : 'text-muted hover:text-foreground bg-surface-muted'
                 }`}
               >
@@ -180,10 +183,13 @@ export default function AnalysisWorkspacePage() {
               </button>
               <button
                 type="button"
+                id="tab-github-pr"
+                role="tab"
+                aria-selected={activeTab === 'github'}
                 onClick={() => setActiveTab('github')}
-                className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
                   activeTab === 'github'
-                    ? 'bg-accent text-white'
+                    ? 'bg-accent text-white font-semibold'
                     : 'text-muted hover:text-foreground bg-surface-muted'
                 }`}
               >
@@ -195,19 +201,22 @@ export default function AnalysisWorkspacePage() {
           {/* Tab 1: GitHub URL */}
           {activeTab === 'github' && (
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <label htmlFor="github-pr-url-input" className="text-xs font-semibold text-foreground flex items-center justify-between">
                 <span>Public GitHub PR URL</span>
                 <span className="text-[10px] text-muted">Required</span>
               </label>
               <input
+                id="github-pr-url-input"
+                name="githubPrUrl"
                 type="url"
+                aria-label="Public GitHub PR URL"
                 value={githubPrUrl}
                 onChange={(e) => {
                   setGithubPrUrl(e.target.value);
                   if (githubPrError && e.target.value.trim()) setGithubPrError(null);
                 }}
                 placeholder="https://github.com/owner/repo/pull/123"
-                className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus:outline-none transition-colors ${
+                className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
                   githubPrError
                     ? 'border-danger bg-danger/5 focus:border-danger'
                     : 'border-border bg-surface-muted/30 focus:border-accent'
@@ -223,8 +232,9 @@ export default function AnalysisWorkspacePage() {
                 <span>Read-only fetch. Max 100KB diff, &le;20 files.</span>
                 <button
                   type="button"
+                  id="btn-load-sample-pr"
                   onClick={handleLoadSamplePr}
-                  className="text-accent hover:underline font-medium"
+                  className="text-accent hover:underline font-medium focus-visible:ring-2 focus-visible:ring-accent rounded px-1"
                 >
                   Load Sample PR #1
                 </button>
@@ -245,12 +255,13 @@ export default function AnalysisWorkspacePage() {
                     type="button"
                     id="btn-clear-code"
                     data-testid="btn-clear-code"
+                    aria-label="Clear code snippet input"
                     onClick={() => {
                       setCodeSnippet('');
                       setCodeSnippetError(null);
                       setResult(null);
                     }}
-                    className="text-[11px] text-muted hover:text-danger hover:underline font-medium"
+                    className="text-[11px] text-muted hover:text-danger hover:underline font-medium min-h-[36px] flex items-center px-1 rounded focus-visible:ring-2 focus-visible:ring-danger"
                   >
                     Clear Code
                   </button>
@@ -265,8 +276,9 @@ export default function AnalysisWorkspacePage() {
                     type="button"
                     id="btn-preset-payment"
                     data-testid="btn-preset-payment"
+                    aria-label="Load Payment Race sample scenario"
                     onClick={() => handleLoadPreset('payment')}
-                    className="px-2.5 py-1 text-xs rounded border border-accent/40 bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors font-medium"
+                    className="px-2.5 py-1.5 text-xs rounded border border-accent/40 bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors font-medium min-h-[36px] flex items-center focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     Payment Race
                   </button>
@@ -274,8 +286,9 @@ export default function AnalysisWorkspacePage() {
                     type="button"
                     id="btn-preset-jwt"
                     data-testid="btn-preset-jwt"
+                    aria-label="Load JWT Leak sample scenario"
                     onClick={() => handleLoadPreset('jwt')}
-                    className="px-2.5 py-1 text-xs rounded border border-border bg-surface text-foreground hover:bg-surface-muted transition-colors font-medium"
+                    className="px-2.5 py-1.5 text-xs rounded border border-border bg-surface text-foreground hover:bg-surface-muted transition-colors font-medium min-h-[36px] flex items-center focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     JWT Leak
                   </button>
@@ -295,7 +308,7 @@ export default function AnalysisWorkspacePage() {
                   setCodeSnippet(e.target.value);
                   if (codeSnippetError && e.target.value.trim()) setCodeSnippetError(null);
                 }}
-                className={`w-full p-3 rounded-md border text-xs font-mono text-foreground focus:outline-none resize-none leading-relaxed transition-colors ${
+                className={`w-full p-3 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent resize-none leading-relaxed transition-colors ${
                   codeSnippetError
                     ? 'border-danger bg-danger/5 focus:border-danger'
                     : 'border-border bg-background focus:border-accent'
@@ -335,7 +348,7 @@ export default function AnalysisWorkspacePage() {
                 setBusinessRule(e.target.value);
                 if (businessRuleError && e.target.value.trim().length >= 10) setBusinessRuleError(null);
               }}
-              className={`w-full p-2.5 rounded-md border text-xs text-foreground focus:outline-none resize-none leading-relaxed transition-colors ${
+              className={`w-full p-2.5 rounded-md border text-xs text-foreground focus-visible:ring-2 focus-visible:ring-accent resize-none leading-relaxed transition-colors ${
                 businessRuleError
                   ? 'border-danger bg-danger/5 focus:border-danger'
                   : 'border-border bg-surface-muted/30 focus:border-accent'
@@ -359,9 +372,12 @@ export default function AnalysisWorkspacePage() {
           <div className="pt-1">
             <button
               type="button"
+              id="btn-launch-analysis"
+              data-testid="btn-launch-analysis"
+              aria-label="Launch Multi-Agent Analysis"
               disabled={loading}
               onClick={handleRunAnalysis}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>

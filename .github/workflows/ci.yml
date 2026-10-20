@@ -31,5 +31,15 @@ jobs:
       - name: Install Playwright browser dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E test suite (9 tests)
+      - name: Run Playwright E2E, Accessibility & Responsive test suite (33 tests)
         run: npx playwright test
+
+      - name: Upload Playwright Test Artifacts, Traces & Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-evidence
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14

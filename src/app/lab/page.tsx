@@ -150,11 +150,13 @@ export default function VerificationLabPage() {
                 {fixture === 'vulnerable' ? 'Flawed race window' : 'Atomic mutex lock'}
               </span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" aria-label="Target Implementation Fixture">
               <button
                 type="button"
+                id="fixture-vulnerable"
+                aria-pressed={fixture === 'vulnerable'}
                 onClick={() => setFixture('vulnerable')}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all ${
+                className={`min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all focus-visible:ring-2 focus-visible:ring-danger ${
                   fixture === 'vulnerable'
                     ? 'border-danger/60 bg-danger/5 text-danger font-bold'
                     : 'border-border text-muted hover:border-border/80'
@@ -171,8 +173,10 @@ export default function VerificationLabPage() {
 
               <button
                 type="button"
+                id="fixture-fixed"
+                aria-pressed={fixture === 'fixed'}
                 onClick={() => setFixture('fixed')}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all ${
+                className={`min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all focus-visible:ring-2 focus-visible:ring-success ${
                   fixture === 'fixed'
                     ? 'border-success/60 bg-success/5 text-success font-bold'
                     : 'border-border text-muted hover:border-border/80'
@@ -195,13 +199,16 @@ export default function VerificationLabPage() {
               <span>Concurrent Parallel Requests</span>
               <span className="font-mono text-xs font-bold text-accent">{concurrency} Async Requests</span>
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-2" aria-label="Concurrent Parallel Requests Level">
               {[1, 2, 3, 4, 5].map((lvl) => (
                 <button
                   key={lvl}
                   type="button"
+                  id={`concurrency-btn-${lvl}`}
+                  aria-pressed={concurrency === lvl}
+                  aria-label={`${lvl} concurrent asynchronous requests`}
                   onClick={() => setConcurrency(lvl)}
-                  className={`py-2 text-xs font-bold rounded-md border text-center transition-all ${
+                  className={`min-h-[40px] py-2 text-xs font-bold rounded-md border text-center transition-all focus-visible:ring-2 focus-visible:ring-accent ${
                     concurrency === lvl
                       ? 'bg-accent text-white border-accent'
                       : 'border-border text-muted hover:bg-surface-muted'
@@ -233,7 +240,7 @@ export default function VerificationLabPage() {
                     setIdempotencyKey('');
                     setIdempotencyKeyError(null);
                   }}
-                  className="text-[11px] text-accent hover:underline font-medium"
+                  className="text-[11px] text-accent hover:underline font-medium min-h-[36px] flex items-center px-1 rounded focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   Clear Key
                 </button>
@@ -254,7 +261,7 @@ export default function VerificationLabPage() {
                   setIdempotencyKeyError(null);
                 }
               }}
-              className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus:outline-none transition-colors ${
+              className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
                 idempotencyKeyError
                   ? 'border-danger bg-danger/5 focus:border-danger'
                   : 'border-border bg-surface-muted/30 focus:border-accent'
@@ -277,22 +284,32 @@ export default function VerificationLabPage() {
           {/* Amount & Mode */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Amount (Minor Units)</label>
+              <label htmlFor="lab-amount-input" className="text-xs font-semibold text-foreground">
+                Amount (Minor Units)
+              </label>
               <input
+                id="lab-amount-input"
+                name="amountMinor"
                 type="number"
+                aria-label="Amount in minor units"
                 value={amountMinor}
                 onChange={(e) => setAmountMinor(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent focus:border-accent"
               />
               <span className="text-[10px] text-muted block">${(amountMinor / 100).toFixed(2)} USD</span>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Payload Mode</label>
+              <label htmlFor="lab-payload-mode" className="text-xs font-semibold text-foreground">
+                Payload Mode
+              </label>
               <select
+                id="lab-payload-mode"
+                name="payloadMode"
+                aria-label="Payload Mode"
                 value={payloadMode}
                 onChange={(e: any) => setPayloadMode(e.target.value)}
-                className="w-full px-2.5 py-2 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus:outline-none focus:border-accent"
+                className="w-full px-2.5 py-2 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-accent focus:border-accent"
               >
                 <option value="same_amount">Identical Amount</option>
                 <option value="differing_amount">Conflicting Amount</option>
@@ -304,9 +321,12 @@ export default function VerificationLabPage() {
           <div className="pt-2">
             <button
               type="button"
+              id="btn-execute-verification"
+              data-testid="btn-execute-verification"
+              aria-label="Execute Verification Harness"
               disabled={loading}
               onClick={handleRunVerification}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
@@ -454,9 +474,11 @@ export default function VerificationLabPage() {
                   </h3>
                   <button
                     type="button"
+                    id="btn-copy-test-assertion"
+                    data-testid="btn-copy-test-assertion"
                     onClick={handleCopyCode}
                     aria-label={copied ? 'Assertion copied to clipboard' : 'Copy test assertion'}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all min-h-[36px] focus-visible:ring-2 focus-visible:ring-accent ${
                       copied
                         ? 'bg-success/15 text-success border border-success/30 font-bold'
                         : copyFailed
