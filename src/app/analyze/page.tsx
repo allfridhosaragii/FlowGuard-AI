@@ -437,6 +437,9 @@ async function processRefund(paymentId, idempotencyKey, amount) {
                       <p className="text-xs text-muted max-w-md">
                         {plan.expectedEffects}
                       </p>
+                      <span className="text-[10px] text-muted/80 block">
+                        Scope: Executes against first-party reference state machine to benchmark invariant behavior.
+                      </span>
                     </div>
 
                     {plan.supportState === 'SUPPORTED' && (
@@ -445,7 +448,7 @@ async function processRefund(paymentId, idempotencyKey, amount) {
                         className="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors shadow-subtle"
                       >
                         <FlaskConical className="w-3.5 h-3.5" />
-                        <span>Run in Lab</span>
+                        <span>Verify In Lab (Fixture)</span>
                         <ArrowRight className="w-3 h-3" />
                       </Link>
                     )}

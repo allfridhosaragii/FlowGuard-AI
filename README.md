@@ -7,7 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/Tests-14%20Passing-success)](tests/)
+[![Vitest](https://img.shields.io/badge/Vitest-28%20Passing-success)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-5%20Passing-success)](tests/e2e.spec.ts)
 
 🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
@@ -25,8 +26,8 @@ Traditional pull request code reviews and static linters check syntax, types, an
 FlowGuard AI bridges the gap between **code review** and **runtime verification**:
 1. **Agent A (Requirement Analyst)**: Extracts formal mathematical invariants from human business rules.
 2. **Agent B (Risk Hunter)**: Analyzes PR diffs for race-condition windows and non-atomic state mutations (marked strictly as `POTENTIAL`).
-3. **Agent C (Verification Planner)**: Synthesizes reproducible test specifications and **TestSprite 3.0** assertions.
-4. **Controlled Verification Lab**: Executes real in-process parallel worker threads against target state machines, proving whether an invariant holds or fails.
+3. **Agent C (Verification Planner)**: Synthesizes reproducible test specifications and **TestSprite 3.0** assertions targeting executable verification endpoints.
+4. **Controlled Verification Lab**: Executes real concurrent asynchronous requests against target state machines, proving whether an invariant holds or fails.
 
 ---
 
@@ -35,7 +36,7 @@ FlowGuard AI bridges the gap between **code review** and **runtime verification*
 | Route | Description |
 |---|---|
 | [`/`](https://flowguard-ai-smoky.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
-| [`/lab`](https://flowguard-ai-smoky.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5x), run real parallel threads, and inspect execution evidence. |
+| [`/lab`](https://flowguard-ai-smoky.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
 | [`/analyze`](https://flowguard-ai-smoky.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
 | [`/about`](https://flowguard-ai-smoky.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
 
@@ -44,33 +45,57 @@ FlowGuard AI bridges the gap between **code review** and **runtime verification*
 ## 🔌 API Endpoints (v1)
 
 - `GET /api/v1/health`: System status, build version, and configured subsystem flags.
-- `POST /api/v1/lab/verify`: Executes the controlled verification test harness with bounded concurrency vectors.
+- `POST /api/v1/lab/verify`: Executes the controlled verification test harness with bounded concurrent asynchronous requests.
 - `POST /api/v1/analyses`: Runs the 3-agent orchestration pipeline on GitHub PR diffs or code inputs.
+
+---
+
+## 🤖 AI Provider Architecture & Honesty Guarantees
+
+FlowGuard AI supports:
+1. **Google Gemini Native REST API**: Direct integration via `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` (e.g. `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`).
+2. **OpenAI-Compatible Providers**: `https://api.openai.com/v1/chat/completions` or any compatible gateway.
+3. **Transparent Heuristic Fallback**: When no API key is provided, FlowGuard AI runs deterministic static AST analysis. The UI explicitly discloses `isRealModel: false` and `heuristic-offline-analyzer (fallback)` — never claiming simulated or heuristic outputs are from a real neural model.
 
 ---
 
 ## 🧪 Automated Testing
 
-FlowGuard AI is built testing-first with Vitest. Run the full automated test suite locally:
+FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# Run all unit, agent, and verification tests:
+# 1. Run all 28 Vitest unit & integration tests:
 npm test
 
-# Run tests in watch mode:
+# 2. Run Playwright End-to-End browser tests (headless Chromium):
+npx playwright test
+
+# 3. Run Vitest in watch mode:
 npm run test:watch
 ```
 
-### Test Coverage Highlights:
-- **`tests/verification.test.ts`**:
+### Test Coverage Breakdown:
+- **`tests/verification.test.ts` (9 tests)**:
   - `V-01`: Vulnerable fixture under concurrency 2 produces duplicate refunds (`VERIFIED_FAIL`).
   - `V-02`: Fixed fixture under concurrency 2 commits exactly once (`VERIFIED_PASS`).
   - `V-03`: Single request concurrency 1 properly passes.
   - `V-04`: Fixed fixture under concurrency 5 maintains strict idempotency.
   - `V-05`: Conflicting idempotency key with differing amounts is rejected.
   - `V-06` & `V-07`: Input bounds and required parameters are strictly enforced.
-- **`tests/agents.test.ts`**: Verifies invariant extraction, risk hunting, test planning, and full 6-stage orchestrator pipeline.
-- **`tests/github.test.ts`**: Verifies URL parsing, read-only boundary enforcement, and error handling.
+  - `V-08`: Concurrency labeled accurately as `concurrent asynchronous requests`.
+  - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
+- **`tests/agents.test.ts` (9 tests)**:
+  - Invariant extraction, risk hunting (stripping comments to avoid false-positive locks), benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, and 6-stage orchestrator pipeline.
+- **`tests/api-integration.test.ts` (8 tests)**:
+  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation and error handling.
+- **`tests/github.test.ts` (2 tests)**:
+  - Read-only GitHub REST URL parser and diff size limit enforcement (100 KB max).
+- **`tests/e2e.spec.ts` (5 tests)**:
+  - `E2E-01`: Landing page navigation and honest CTAs.
+  - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
+  - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
+  - `E2E-04`: PR & Code Analysis workspace running multi-agent pipeline.
+  - `E2E-05`: Architecture & Invariants page formal definitions.
 
 ---
 
@@ -85,10 +110,9 @@ cd FlowGuard-AI
 npm install
 
 # 3. (Optional) Configure environment variables
-# Create .env.local if you wish to connect a live LLM provider or GitHub read token:
-# LLM_API_KEY=your_key
-# LLM_MODEL=gpt-4o-mini
-# GITHUB_READ_TOKEN=your_token
+# GEMINI_API_KEY=your_gemini_api_key
+# GEMINI_MODEL=gemini-1.5-flash
+# GITHUB_READ_TOKEN=your_github_token
 
 # 4. Start local development server
 npm run dev
@@ -103,7 +127,19 @@ npm run build
 
 - **No Arbitrary Execution**: External repository code is NEVER executed on the application server. The Verification Lab runs exclusively on allowlisted first-party synthetic fixtures.
 - **Evidence Precedes Verdicts**: AI findings for external PRs are strictly classified as `POTENTIAL`. Verdicts (`VERIFIED_PASS` or `VERIFIED_FAIL`) are reserved strictly for executed tests.
+- **Dynamic Provenance**: Verification evidence logs the live commit SHA (`git rev-parse HEAD`), fixture identity, and execution timestamps.
 - **Read-Only GitHub REST**: All PR inspections are strictly read-only with enforced diff size caps (100 KB max).
+
+---
+
+## 🤖 TestSprite 3.0 Integration Guide
+
+1. **Install TestSprite GitHub App**:
+   - Navigate to [TestSprite Console](https://www.testsprite.com/) and install the TestSprite GitHub App for `allfridhosaragii/FlowGuard-AI`.
+2. **Pull Request Workflow**:
+   - Each PR opened against `main` automatically triggers Vercel Preview Deployments and TestSprite automated regression runs.
+3. **Assertions**:
+   - TestSprite 3.0 can execute assertions directly against the `/api/v1/lab/verify` endpoint to validate state machine invariants.
 
 ---
 

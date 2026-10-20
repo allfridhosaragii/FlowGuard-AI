@@ -11,12 +11,12 @@ export class RiskHunterAgent {
 
     if (isConfigured) {
       const systemPrompt = `You are Agent B (Risk Hunter) for FlowGuard AI.
-Analyze the provided code diff against the business invariants.
-Identify potential logical regressions, race conditions, missing idempotency keys, unhandled edge cases, or security flaws.
+Analyze the provided code diff strictly against the specified business invariants.
 CRITICAL RULES:
-1. Every finding MUST have status "POTENTIAL" (never claim a bug is verified without execution).
-2. Reference actual files and lines from the diff.
-3. Output valid JSON matching:
+1. Every finding MUST have status "POTENTIAL" (never claim a bug is verified without execution evidence).
+2. If the diff does NOT contain sufficient evidence of an invariant violation (e.g. benign refactoring, comments, formatting, or safe synchronous logic), return an EMPTY findings array: {"findings": []}.
+3. DO NOT fabricate generic risks when evidence is insufficient.
+4. Output valid JSON matching:
 {
   "findings": [
     {
@@ -25,14 +25,14 @@ CRITICAL RULES:
       "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO",
       "sourcePaths": ["path/to/file.ts"],
       "sourceLineRefs": ["L15-L25"],
-      "why": "Detailed explanation of how the code violates the invariant",
+      "why": "Specific technical explanation of how the code violates the invariant",
       "counterexample": "Concrete scenario where this causes failure",
       "status": "POTENTIAL"
     }
   ]
 }`;
 
-      const userPrompt = `Business Invariants to verify:
+      const userPrompt = `Business Invariants to evaluate:
 ${JSON.stringify(invariants, null, 2)}
 
 Target Code Diff:
@@ -51,7 +51,7 @@ ${filePaths.join('\n')}`;
             severity: f.severity || 'HIGH',
             sourcePaths: Array.isArray(f.sourcePaths) ? f.sourcePaths : filePaths.slice(0, 1),
             sourceLineRefs: Array.isArray(f.sourceLineRefs) ? f.sourceLineRefs : ['L1'],
-            why: f.why || 'Potential race condition or invariant violation detected.',
+            why: f.why || 'Potential invariant violation detected.',
             counterexample: f.counterexample || 'Concurrent requests violate safety boundaries.',
             status: 'POTENTIAL',
           })
@@ -74,10 +74,15 @@ ${filePaths.join('\n')}`;
     return {
       findings: this.heuristicScan(invariants, codeDiff, filePaths),
       isRealModel: false,
-      modelName: 'heuristic-rule-engine-v1',
+      modelName: 'deterministic-heuristic-v1',
     };
   }
 
+  /**
+   * Deterministic Heuristic Scanner
+   * Evaluates concrete structural patterns in the diff.
+   * NEVER returns generic placeholder findings if evidence is absent.
+   */
   private static heuristicScan(
     invariants: BusinessInvariant[],
     codeDiff: string,
@@ -86,60 +91,58 @@ ${filePaths.join('\n')}`;
     const findings: RiskFinding[] = [];
     const inv = invariants[0] || { id: 'INV-001' };
 
-    // Pattern 1: Non-atomic read before write / missing mutex / race condition
-    const hasRacePattern =
-      /setTimeout|sleep|async.*find|find.*await|select.*where|read.*then.*write/i.test(codeDiff) &&
-      !/lock|mutex|atomic|transaction|serializable|isolation/i.test(codeDiff);
+    // Pattern 1: Concurrency Race / Non-atomic read before write in state-modifying code
+    const hasAsyncGap =
+      /setTimeout|sleep|await\s+new\s+Promise/i.test(codeDiff) ||
+      (/findOne|findById|select.*from/i.test(codeDiff) && /create|insert|update|save/i.test(codeDiff));
 
-    // Pattern 2: Refund without idempotency check
-    const hasUncheckedRefund =
-      /refund|settle|transfer|deduct/i.test(codeDiff) &&
-      !/idempotency|idempotentKey|idempotency_key/i.test(codeDiff);
+    const hasStateMutation =
+      /refund|settle|transfer|deduct|balance|withdraw|charge/i.test(codeDiff);
 
-    // Pattern 3: JWT none or unsigned token
-    const hasJwtFlaw = /none|algorithm:\s*['"]none['"]|verify\s*=\s*false/i.test(codeDiff);
+    // Strip comments to ensure explanatory notes like "// without lock" don't falsely mask the risk
+    const codeWithoutComments = codeDiff
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
 
-    if (hasRacePattern || hasUncheckedRefund) {
+    const hasLockingProtection =
+      /\.lock\s*\(|acquireLock|inFlightClaims|mutex|atomic\w+|transaction\(|isolation:\s*['"]serializable['"]|pessimistic/i.test(
+        codeWithoutComments
+      );
+
+    if (hasAsyncGap && hasStateMutation && !hasLockingProtection) {
       findings.push({
         id: 'RISK-001',
         ruleId: inv.id,
         severity: 'CRITICAL',
         sourcePaths: filePaths.length > 0 ? [filePaths[0]] : ['src/payment/service.ts'],
         sourceLineRefs: ['L18-L34'],
-        why: 'Asynchronous state validation is separated from ledger write without atomic locking or distributed reservation. Concurrent retries can execute multiple state mutations.',
+        why: 'Asynchronous state check is decoupled from the state write without atomic locking or distributed reservation. Concurrent requests can read uncommitted state and cause duplicate side effects.',
         counterexample:
-          'Two parallel refund requests with identical key both pass the pre-check window before either writes to the database, resulting in duplicate fund disbursement.',
+          'Two concurrent requests with the identical idempotency key arrive within the async window; both pass the existence check and each commits a duplicate refund.',
         status: 'POTENTIAL',
       });
     }
 
-    if (hasJwtFlaw) {
+    // Pattern 2: Cryptographic signature bypass or algorithm "none"
+    const hasJwtNoneBypass =
+      /alg\s*===\s*['"]none['"]|algorithm:\s*['"]none['"]|verify\s*:\s*false/i.test(codeDiff);
+
+    if (hasJwtNoneBypass) {
       findings.push({
         id: 'RISK-002',
         ruleId: inv.id,
         severity: 'HIGH',
         sourcePaths: filePaths.length > 0 ? [filePaths[0]] : ['src/auth/middleware.ts'],
         sourceLineRefs: ['L10-L16'],
-        why: 'Insecure cryptographic policy allows unsigned tokens or algorithm fallback.',
-        counterexample: 'Adversary crafts unsigned JWT to impersonate privileged administrator role.',
+        why: 'Cryptographic policy accepts unsigned JWT tokens using the "none" algorithm without signature validation.',
+        counterexample:
+          'An unauthenticated caller provides an unsigned JWT with administrative claims, bypassing authorization checks.',
         status: 'POTENTIAL',
       });
     }
 
-    if (findings.length === 0 && codeDiff.length > 0) {
-      // General heuristic finding if diff modifies critical business paths
-      findings.push({
-        id: 'RISK-001',
-        ruleId: inv.id,
-        severity: 'MEDIUM',
-        sourcePaths: filePaths.length > 0 ? [filePaths[0]] : ['src/core/handler.ts'],
-        sourceLineRefs: ['L1-L20'],
-        why: 'State mutation in modified code may be vulnerable to concurrency re-entrancy under high request volume.',
-        counterexample: 'Rapid bursts of identical requests may yield non-deterministic execution orders.',
-        status: 'POTENTIAL',
-      });
-    }
-
+    // NOTE: If no concrete vulnerability pattern matches, return EMPTY findings array.
+    // We intentionally DO NOT inject generic catch-all findings.
     return findings;
   }
 }

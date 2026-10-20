@@ -80,7 +80,7 @@ export default function VerificationLabPage() {
           Controlled Verification Lab
         </h1>
         <p className="text-sm text-muted max-w-2xl leading-relaxed">
-          Prove or disprove business invariants using real concurrent execution. The test harness runs parallel Node.js threads against synthetic financial state machines and collects tangible execution evidence.
+          Prove or disprove business invariants using real concurrent execution. The test harness executes concurrent asynchronous requests against synthetic financial state machines via Promise.all and collects tangible execution evidence.
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export default function VerificationLabPage() {
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Concurrent Parallel Requests</span>
-              <span className="font-mono text-xs font-bold text-accent">{concurrency} Worker Threads</span>
+              <span className="font-mono text-xs font-bold text-accent">{concurrency} Async Requests</span>
             </label>
             <div className="grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((lvl) => (
@@ -222,7 +222,7 @@ export default function VerificationLabPage() {
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Executing Concurrent Threads...</span>
+                  <span>Executing Concurrent Async Requests...</span>
                 </>
               ) : (
                 <>

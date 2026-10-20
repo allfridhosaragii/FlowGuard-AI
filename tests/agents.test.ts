@@ -20,6 +20,17 @@ diff --git a/src/refund.ts b/src/refund.ts
 +  }
 `;
 
+  const cleanDiff = `
+diff --git a/src/math.ts b/src/math.ts
+--- a/src/math.ts
++++ b/src/math.ts
+@@ -1,4 +1,5 @@
++/** Adds two numbers together safely */
+ export function add(a: number, b: number): number {
+   return a + b;
+ }
+`;
+
   it('Agent A: extracts formal invariants and acceptance criteria', async () => {
     const res = await RequirementAgent.analyze(sampleRule);
     expect(res.invariants.length).toBeGreaterThanOrEqual(1);
@@ -37,6 +48,14 @@ diff --git a/src/refund.ts b/src/refund.ts
     expect(res.findings[0].counterexample).toBeTruthy();
   });
 
+  it('Agent B (Regression against False Positives): returns 0 findings on clean/benign diff', async () => {
+    const inv = (await RequirementAgent.analyze(sampleRule)).invariants;
+    const res = await RiskHunterAgent.analyze(inv, cleanDiff, ['src/math.ts']);
+
+    // Must NOT return generic false positives when evidence is absent!
+    expect(res.findings.length).toBe(0);
+  });
+
   it('Agent C: synthesizes supported verification plan for idempotency finding', async () => {
     const inv = (await RequirementAgent.analyze(sampleRule)).invariants;
     const findings = (await RiskHunterAgent.analyze(inv, vulnerableDiff, ['src/refund.ts'])).findings;
@@ -48,7 +67,13 @@ diff --git a/src/refund.ts b/src/refund.ts
     expect(res.plans[0].fixtureId).toBe('refund-vulnerable-v1');
   });
 
-  it('AgentOrchestrator: runs full 6-stage pipeline and produces valid AnalysisResult', async () => {
+  it('Agent C: returns empty plans when findings are empty', async () => {
+    const inv = (await RequirementAgent.analyze(sampleRule)).invariants;
+    const res = await VerificationPlannerAgent.plan(inv, []);
+    expect(res.plans.length).toBe(0);
+  });
+
+  it('AgentOrchestrator: runs full 6-stage pipeline and produces valid AnalysisResult for vulnerable code', async () => {
     const result = await AgentOrchestrator.run({
       businessRule: sampleRule,
       sourceType: 'MANUAL_CODE',
@@ -65,6 +90,34 @@ diff --git a/src/refund.ts b/src/refund.ts
     expect(result.findings.length).toBeGreaterThanOrEqual(1);
     expect(result.plans.length).toBeGreaterThanOrEqual(1);
     expect(result.notes.some((n) => n.includes('POTENTIAL'))).toBe(true);
+  });
+
+  it('AgentOrchestrator: produces NO_RISK_FOUND when code diff is benign', async () => {
+    const result = await AgentOrchestrator.run({
+      businessRule: sampleRule,
+      sourceType: 'MANUAL_CODE',
+      sourceReference: 'manual-clean-math',
+      codeDiff: cleanDiff,
+      filePaths: ['src/math.ts'],
+    });
+
+    expect(result.verdict).toBe('NO_RISK_FOUND');
+    expect(result.findings.length).toBe(0);
+    expect(result.plans.length).toBe(0);
+  });
+
+  it('AgentOrchestrator: accurately labels heuristic offline mode without claiming real AI', async () => {
+    const result = await AgentOrchestrator.run({
+      businessRule: sampleRule,
+      sourceType: 'MANUAL_CODE',
+      sourceReference: 'test',
+      codeDiff: cleanDiff,
+    });
+
+    if (!result.isRealModel) {
+      expect(result.modelUsed).toContain('heuristic');
+      expect(result.notes.some((n) => n.includes('not configured'))).toBe(true);
+    }
   });
 
   it('AgentOrchestrator: rejects invalid short business rule (<10 chars)', async () => {

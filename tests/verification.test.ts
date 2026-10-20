@@ -112,4 +112,31 @@ describe('Controlled Verification Lab - INV-REFUND-001', () => {
       })
     ).rejects.toThrow(/Concurrency must be between 1 and 5/);
   });
+
+  it('V-08: generates TestSprite assertion targeting the real executable /api/v1/lab/verify endpoint', async () => {
+    const evidence = await VerificationRunner.execute({
+      fixture: 'fixed',
+      paymentId: 'pay_test_008',
+      idempotencyKey: 'key_code_gen',
+      amountMinor: 50000,
+      concurrency: 2,
+    });
+
+    expect(evidence.testSpriteAssertion).toContain('/api/v1/lab/verify');
+    expect(evidence.testSpriteAssertion).toContain("expect(response.status()).toBe(200)");
+    expect(evidence.testSpriteAssertion).toContain("expect(evidence.verdict).toBe('VERIFIED_PASS')");
+  });
+
+  it('V-09: evidence includes explicit scope guarantee and no hardcoded commit SHA', async () => {
+    const evidence = await VerificationRunner.execute({
+      fixture: 'vulnerable',
+      paymentId: 'pay_test_009',
+      idempotencyKey: 'key_scope_check',
+      amountMinor: 50000,
+      concurrency: 2,
+    });
+
+    expect(evidence.notes.some((n) => n.includes('Scope Guarantee'))).toBe(true);
+    expect(evidence.targetVersion).not.toBe('git:7ae716e#fixture'); // No legacy hardcode
+  });
 });
