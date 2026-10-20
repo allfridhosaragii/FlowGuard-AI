@@ -80,7 +80,7 @@ Changed Files: ${prContext?.files?.join(', ') || 'N/A'}`;
         scope: 'Payment & Settlement Processing',
         assumptions: [
           'Clients may retry failed or timed-out network requests with identical idempotency key.',
-          'Database operations may experience concurrent thread scheduling.',
+          'Database operations may experience concurrent asynchronous request interleaving.',
         ],
       };
     }

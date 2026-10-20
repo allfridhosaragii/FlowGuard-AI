@@ -25,11 +25,11 @@ jobs:
       - name: Build Next.js application
         run: npm run build
 
-      - name: Run Vitest unit & integration suite (28 tests)
+      - name: Run Vitest unit & integration suite (30 tests)
         run: npm test
 
       - name: Install Playwright browser dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E test suite (5 flows)
+      - name: Run Playwright E2E test suite (9 tests)
         run: npx playwright test

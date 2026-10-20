@@ -64,7 +64,7 @@ FlowGuard AI supports:
 FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# 1. Run all 28 Vitest unit & integration tests:
+# 1. Run all 30 Vitest unit & integration tests:
 npm test
 
 # 2. Run Playwright End-to-End browser tests (headless Chromium):
@@ -86,16 +86,20 @@ npm run test:watch
   - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
 - **`tests/agents.test.ts` (9 tests)**:
   - Invariant extraction, risk hunting (stripping comments to avoid false-positive locks), benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, and 6-stage orchestrator pipeline.
-- **`tests/api-integration.test.ts` (8 tests)**:
-  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation and error handling.
+- **`tests/api-integration.test.ts` (10 tests)**:
+  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, and error handling.
 - **`tests/github.test.ts` (2 tests)**:
   - Read-only GitHub REST URL parser and diff size limit enforcement (100 KB max).
-- **`tests/e2e.spec.ts` (5 tests)**:
+- **`tests/e2e.spec.ts` (9 tests)**:
   - `E2E-01`: Landing page navigation and honest CTAs.
   - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
   - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
   - `E2E-04`: PR & Code Analysis workspace running multi-agent pipeline.
   - `E2E-05`: Architecture & Invariants page formal definitions.
+  - `E2E-06 (LAB-008)`: Generated verification assertion copied to clipboard with honest feedback.
+  - `E2E-07 (LAB-007)`: Empty idempotency key rejected with actionable validation and clears previous report.
+  - `E2E-08 (ANA-004)`: Empty code snippet rejected before analysis without fake report.
+  - `E2E-09 (UX-001)`: Mobile viewport (390x844) supports all primary user flows.
 
 ---
 

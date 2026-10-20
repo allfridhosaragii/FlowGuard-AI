@@ -5,7 +5,7 @@ import { PaymentRecord, RefundRequest, RefundResult } from './types';
  * 
  * Flaw: Non-atomic read-then-write check without distributed/memory lock.
  * When concurrent requests arrive simultaneously with the same idempotency key,
- * both threads read the uncommitted state during the async I/O window and both
+ * both concurrent asynchronous requests read the uncommitted state during the async I/O window and both
  * commit a duplicate refund side effect.
  */
 export class VulnerableRefundService {

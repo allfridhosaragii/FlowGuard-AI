@@ -341,7 +341,7 @@ export default function VerificationLabPage() {
               <FlaskConical className="w-10 h-10 text-muted mx-auto stroke-[1.5]" />
               <h3 className="font-bold text-sm text-foreground">Harness Standing By</h3>
               <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
-                Configure parameters and click <strong>&quot;Execute Verification Harness&quot;</strong> to start concurrent threads and collect execution evidence.
+                Configure parameters and click <strong>&quot;Execute Verification Harness&quot;</strong> to dispatch concurrent asynchronous requests and collect execution evidence.
               </p>
             </div>
           ) : (

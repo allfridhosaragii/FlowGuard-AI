@@ -33,7 +33,7 @@ describe('Controlled Verification Lab - INV-REFUND-001', () => {
     expect(evidence.verdict).toBe('VERIFIED_PASS');
   });
 
-  it('V-03: vulnerable fixture under concurrency 1 legitimately passes because there is no competing thread', async () => {
+  it('V-03: vulnerable fixture under concurrency 1 legitimately passes because there is no competing concurrent request', async () => {
     const evidence = await VerificationRunner.execute({
       fixture: 'vulnerable',
       paymentId: 'pay_test_003',
