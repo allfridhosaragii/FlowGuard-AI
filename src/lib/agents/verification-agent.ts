@@ -55,8 +55,8 @@ ${JSON.stringify(findings, null, 2)}`;
 
       const response = await AIProvider.generateJSON(systemPrompt, userPrompt);
       try {
-        const parsed = JSON.parse(response.content);
-        const plans = (parsed.plans || []).map((p: any, idx: number) =>
+        const parsed = JSON.parse(response.content) as { plans?: Record<string, unknown>[] };
+        const plans = (parsed.plans || []).map((p, idx: number) =>
           VerificationPlanSchema.parse({
             findingId: p.findingId || findings[idx]?.id || 'RISK-001',
             testType: p.testType || 'IDEMPOTENCY_CONCURRENCY',

@@ -1,6 +1,15 @@
 import { AIProvider } from '../ai/provider';
 import { BusinessInvariant, RiskFinding, RiskFindingSchema } from '../schemas/agent-schemas';
 
+function hunkLineRefs(diff: string): string[] {
+  return [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].flatMap((match) => {
+    const start = Number(match[1]);
+    const count = match[2] === undefined ? 1 : Number(match[2]);
+    if (count === 0) return [];
+    return [count === 1 ? `L${start}` : `L${start}-L${start + count - 1}`];
+  });
+}
+
 export class RiskHunterAgent {
   public static async analyze(
     invariants: BusinessInvariant[],
@@ -43,17 +52,17 @@ ${filePaths.join('\n')}`;
 
       const response = await AIProvider.generateJSON(systemPrompt, userPrompt);
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = JSON.parse(response.content) as { findings?: Record<string, unknown>[] };
         if (!Array.isArray(parsed.findings)) {
           throw new Error('Risk model response missing findings array');
         }
-        const findings = parsed.findings.map((f: any, idx: number) =>
+        const findings = parsed.findings.map((f, idx: number) =>
           RiskFindingSchema.parse({
             id: f.id || `RISK-${String(idx + 1).padStart(3, '0')}`,
             ruleId: f.ruleId || invariants[0]?.id || 'INV-001',
             severity: f.severity || 'HIGH',
             sourcePaths: Array.isArray(f.sourcePaths) ? f.sourcePaths : filePaths.slice(0, 1),
-            sourceLineRefs: Array.isArray(f.sourceLineRefs) ? f.sourceLineRefs : ['L1'],
+            sourceLineRefs: Array.isArray(f.sourceLineRefs) ? f.sourceLineRefs : hunkLineRefs(codeDiff),
             why: f.why || 'Potential invariant violation detected.',
             counterexample: f.counterexample || 'Concurrent requests violate safety boundaries.',
             status: 'POTENTIAL',
@@ -91,12 +100,42 @@ ${filePaths.join('\n')}`;
     codeDiff: string,
     filePaths: string[]
   ): RiskFinding[] {
+    const filePatches = codeDiff.split(/(?=^diff --git )/m).filter((part) => part.startsWith('diff --git '));
+    if (filePatches.length > 1) {
+      const findings = filePatches.flatMap((patch, index) => {
+        const path = patch.match(/^diff --git a\/.+? b\/(.+)$/m)?.[1] || filePaths[index];
+        return this.heuristicScan(invariants, patch, path ? [path] : []);
+      });
+      return findings.map((finding, index) => ({
+        ...finding,
+        id: `RISK-${String(index + 1).padStart(3, '0')}`,
+      }));
+    }
+
     const findings: RiskFinding[] = [];
     const inv = invariants[0] || { id: 'INV-001' };
+    const sourceLineRefs = hunkLineRefs(codeDiff);
 
-    // Strip comments BEFORE risk signal detection so comments cannot fabricate findings.
-    // This is still a bounded heuristic scanner, not a full AST parser.
-    const codeWithoutComments = codeDiff
+    // In a unified diff, removed lines describe the old implementation. Scan
+    // only the new-side hunk (added and context lines), never diff metadata.
+    const isUnifiedDiff = /^(?:diff --git |@@ )/m.test(codeDiff);
+    let inHunk = false;
+    const targetCode = isUnifiedDiff
+      ? codeDiff.split(/\r?\n/).flatMap((line) => {
+          if (line.startsWith('diff --git ')) inHunk = false;
+          if (line.startsWith('@@ ')) {
+            inHunk = true;
+            return [];
+          }
+          return inHunk && (line.startsWith('+') || line.startsWith(' '))
+            ? [line.slice(1)]
+            : [];
+        }).join('\n')
+      : codeDiff;
+
+    // Strip comments BEFORE every risk signal check. This remains a bounded
+    // heuristic scanner, not a full parser for every source language.
+    const codeWithoutComments = targetCode
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '');
 
@@ -119,7 +158,7 @@ ${filePaths.join('\n')}`;
         ruleId: inv.id,
         severity: 'CRITICAL',
         sourcePaths: filePaths.length > 0 ? [filePaths[0]] : ['src/payment/service.ts'],
-        sourceLineRefs: ['L18-L34'],
+        sourceLineRefs,
         why: 'Asynchronous state check is decoupled from the state write without atomic locking or distributed reservation. Concurrent requests can read uncommitted state and cause duplicate side effects.',
         counterexample:
           'Two concurrent requests with the identical idempotency key arrive within the async window; both pass the existence check and each commits a duplicate refund.',
@@ -129,7 +168,7 @@ ${filePaths.join('\n')}`;
 
     // Pattern 2: Cryptographic signature bypass or algorithm "none"
     const hasJwtNoneBypass =
-      /alg\s*===\s*['"]none['"]|algorithm:\s*['"]none['"]|verify\s*:\s*false/i.test(codeDiff);
+      /alg\s*===\s*['"]none['"]|algorithm:\s*['"]none['"]|verify\s*:\s*false/i.test(codeWithoutComments);
 
     if (hasJwtNoneBypass) {
       findings.push({
@@ -137,7 +176,7 @@ ${filePaths.join('\n')}`;
         ruleId: inv.id,
         severity: 'HIGH',
         sourcePaths: filePaths.length > 0 ? [filePaths[0]] : ['src/auth/middleware.ts'],
-        sourceLineRefs: ['L10-L16'],
+        sourceLineRefs,
         why: 'Cryptographic policy accepts unsigned JWT tokens using the "none" algorithm without signature validation.',
         counterexample:
           'An unauthenticated caller provides an unsigned JWT with administrative claims, bypassing authorization checks.',

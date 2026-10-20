@@ -52,6 +52,14 @@ export default function AnalysisWorkspacePage() {
       ? `Domain Notice: Business rule specifies ${ruleDomain.toUpperCase()} domain constraints, but the target code is pure arithmetic. FlowGuard will enforce general pure-function invariants.`
       : null;
 
+  const invalidateActiveAnalysis = () => {
+    activeRequestIdRef.current++;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setLoading(false);
+    setResult(null);
+  };
+
   const handleRunAnalysis = async () => {
     // Reset prior reports and errors immediately on new run attempt
     setResult(null);
@@ -101,7 +109,12 @@ export default function AnalysisWorkspacePage() {
 
     setLoading(true);
     try {
-      const payload: any = {
+      const payload: {
+        businessRule: string;
+        githubPrUrl?: string;
+        codeSnippet?: string;
+        filePaths?: string[];
+      } = {
         businessRule: businessRule.trim(),
       };
 
@@ -140,12 +153,12 @@ export default function AnalysisWorkspacePage() {
         return;
       }
       setResult(data);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
         return; // Stale request aborted — do not show error
       }
       if (currentRequestId === activeRequestIdRef.current) {
-        setError(err.message || 'Analysis pipeline failed');
+        setError(err instanceof Error ? err.message : 'Analysis pipeline failed');
         setResult(null);
       }
     } finally {
@@ -156,6 +169,7 @@ export default function AnalysisWorkspacePage() {
   };
 
   const handleLoadSamplePr = () => {
+    invalidateActiveAnalysis();
     setActiveTab('github');
     setGithubPrUrl('https://github.com/allfridhosaragii/FlowGuard-AI/pull/1');
     setBusinessRule(
@@ -166,6 +180,7 @@ export default function AnalysisWorkspacePage() {
   };
 
   const handleLoadPreset = (type: 'payment' | 'jwt' | 'clean') => {
+    invalidateActiveAnalysis();
     setActiveTab('snippet');
     setPresetActive(type);
     setIsUserEditedRule(false);
@@ -213,6 +228,7 @@ export default function AnalysisWorkspacePage() {
   };
 
   const handleClearCode = () => {
+    invalidateActiveAnalysis();
     setCodeSnippet('');
     setCodeSnippetError(null);
     setResult(null);
@@ -254,7 +270,7 @@ export default function AnalysisWorkspacePage() {
                 id="tab-code-snippet"
                 role="tab"
                 aria-selected={activeTab === 'snippet'}
-                onClick={() => setActiveTab('snippet')}
+                onClick={() => { invalidateActiveAnalysis(); setActiveTab('snippet'); }}
                 className={`px-3 py-1.5 text-xs rounded font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
                   activeTab === 'snippet'
                     ? 'bg-accent text-white font-semibold'
@@ -268,7 +284,7 @@ export default function AnalysisWorkspacePage() {
                 id="tab-github-pr"
                 role="tab"
                 aria-selected={activeTab === 'github'}
-                onClick={() => setActiveTab('github')}
+                onClick={() => { invalidateActiveAnalysis(); setActiveTab('github'); }}
                 className={`px-3 py-1.5 text-xs rounded font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
                   activeTab === 'github'
                     ? 'bg-accent text-white font-semibold'
@@ -294,6 +310,7 @@ export default function AnalysisWorkspacePage() {
                 aria-label="Public GitHub PR URL"
                 value={githubPrUrl}
                 onChange={(e) => {
+                  invalidateActiveAnalysis();
                   setGithubPrUrl(e.target.value);
                   if (githubPrError && e.target.value.trim()) setGithubPrError(null);
                 }}
@@ -394,6 +411,7 @@ export default function AnalysisWorkspacePage() {
                 value={codeSnippet}
                 onChange={(e) => {
                   const val = e.target.value;
+                  invalidateActiveAnalysis();
                   setCodeSnippet(val);
                   if (codeSnippetError && val.trim()) setCodeSnippetError(null);
                   if (val.trim() === '') {
@@ -458,6 +476,7 @@ export default function AnalysisWorkspacePage() {
               aria-describedby={businessRuleError ? 'business-rule-error' : undefined}
               value={businessRule}
               onChange={(e) => {
+                invalidateActiveAnalysis();
                 setBusinessRule(e.target.value);
                 setIsUserEditedRule(true);
                 if (businessRuleError && e.target.value.trim().length >= 10) setBusinessRuleError(null);
@@ -685,7 +704,10 @@ export default function AnalysisWorkspacePage() {
 
                       <div className="text-[11px] text-muted flex items-center gap-2">
                         <FileCode className="w-3.5 h-3.5" />
-                        <span>Paths: {finding.sourcePaths.join(', ')} ({finding.sourceLineRefs.join(', ')})</span>
+                        <span>
+                          Paths: {finding.sourcePaths.join(', ')}
+                          {finding.sourceLineRefs.length > 0 && ` (${finding.sourceLineRefs.join(', ')})`}
+                        </span>
                       </div>
                     </div>
                   ))

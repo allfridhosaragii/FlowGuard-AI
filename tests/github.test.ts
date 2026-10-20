@@ -3,6 +3,10 @@ import { GitHubPRReader } from '../src/lib/github/pr-reader';
 import { RiskHunterAgent } from '../src/lib/agents/risk-agent';
 import { BusinessInvariant } from '../src/lib/schemas/agent-schemas';
 
+function acceptHeader(opts?: RequestInit): string {
+  return new Headers(opts?.headers).get('Accept') ?? '';
+}
+
 // ─── URL Parsing ───────────────────────────────────────────────────────────────
 
 describe('GitHubPRReader.parsePRUrl', () => {
@@ -123,7 +127,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     const files = makeFiles(5);
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => files, text: async () => '' };
       }
@@ -160,7 +164,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     const allFiles = [...tsFiles, ...mdFiles];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => allFiles, text: async () => '' };
       }
@@ -219,7 +223,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     const allFiles = [...codeFiles, ...skippedFiles];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => allFiles, text: async () => '' };
       }
@@ -267,7 +271,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
 
     let fileCallCount = 0;
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         fileCallCount++;
         if (fileCallCount === 1) {
@@ -320,7 +324,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     ];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => files, text: async () => '' };
       }
@@ -364,7 +368,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     ];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => giantFile, text: async () => '' };
       }
@@ -396,7 +400,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     let callCount = 0;
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         callCount++;
         if (callCount === 1) {
@@ -434,7 +438,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     let callCount = 0;
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         callCount++;
         return { ok: true, status: 200, json: async () => page100, text: async () => '' };
@@ -474,7 +478,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     ];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => renamedFile, text: async () => '' };
       }
@@ -519,7 +523,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     ];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => files, text: async () => '' };
       }
@@ -566,7 +570,7 @@ describe('GitHubPRReader.fetchPR — pagination & partial analysis', () => {
     ];
 
     const fakeFetch = vi.fn(async (url: string, opts?: RequestInit) => {
-      const accept = (opts as any)?.headers?.Accept ?? '';
+      const accept = acceptHeader(opts);
       if (url.includes('/files')) {
         return { ok: true, status: 200, json: async () => onlyBinaryFiles, text: async () => '' };
       }

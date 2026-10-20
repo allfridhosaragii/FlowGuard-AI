@@ -78,8 +78,8 @@ Changed Files: ${prContext?.files?.join(', ') || 'N/A'}`;
 
       const response = await AIProvider.generateJSON(systemPrompt, userPrompt);
       try {
-        const parsed = JSON.parse(response.content);
-        const filtered = (parsed.invariants || []).filter((inv: any) => {
+        const parsed = JSON.parse(response.content) as { invariants?: Record<string, unknown>[] };
+        const filtered = (parsed.invariants || []).filter((inv) => {
           if (codeDomain === 'arithmetic') {
             const txt = `${inv.id || ''} ${inv.scope || ''} ${inv.predicate || ''}`.toLowerCase();
             return !txt.includes('auth') && !txt.includes('jwt') && !txt.includes('refund') && !txt.includes('payment');
@@ -87,7 +87,7 @@ Changed Files: ${prContext?.files?.join(', ') || 'N/A'}`;
           return true;
         });
 
-        const invariants = filtered.map((inv: any, idx: number) =>
+        const invariants = filtered.map((inv, idx: number) =>
           BusinessInvariantSchema.parse({
             id: inv.id || `INV-${String(idx + 1).padStart(3, '0')}`,
             humanText: inv.humanText || humanRule,
