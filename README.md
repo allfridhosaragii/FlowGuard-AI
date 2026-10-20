@@ -4,8 +4,10 @@
 > Built for mission-critical architectures and integrated with **TestSprite 3.0** synthetic test generation.
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Deployment](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)](https://vercel.com)
-[![Status](https://img.shields.io/badge/Status-MVP%20v0.1-brightgreen)](#)
+[![Live Demo](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app)
+[![Status](https://img.shields.io/badge/Status-MVP%20v0.1-brightgreen)](https://flowguard-ai-smoky.vercel.app)
+
+🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app](https://flowguard-ai-smoky.vercel.app)
 
 ---
 
