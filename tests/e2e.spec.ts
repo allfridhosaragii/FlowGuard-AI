@@ -247,4 +247,140 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
       timeout: 10000,
     });
   });
+
+  test('E2E-10: Context Isolation — JWT preset -> Clear Code -> arithmetic snippet -> Launch Analysis does NOT leak INV-AUTH-001', async ({
+    page,
+  }) => {
+    await page.goto('/analyze');
+
+    // 1. Load JWT Leak preset
+    const jwtPresetBtn = page.getByRole('button', { name: /JWT Leak/i });
+    await expect(jwtPresetBtn).toBeVisible();
+    await jwtPresetBtn.click();
+
+    // Verify code snippet and business rule contain JWT content
+    const snippetInput = page.getByRole('textbox', { name: /Target Code/i });
+    const ruleInput = page.locator('#business-rule-input');
+    await expect(snippetInput).toContainText('verifyToken');
+    await expect(ruleInput).toContainText('token');
+
+    // 2. Click Clear Code
+    const clearBtn = page.getByRole('button', { name: /Clear Code/i });
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+
+    // Assert code is cleared and preset business rule is not silently retained
+    await expect(snippetInput).toHaveValue('');
+    await expect(ruleInput).toHaveValue('');
+
+    // 3. Input benign arithmetic snippet
+    const arithmeticSnippet = `export function add(a: number, b: number): number {\n  return a + b;\n}`;
+    await snippetInput.fill(arithmeticSnippet);
+
+    // Business rule automatically aligns to pure arithmetic domain since rule was not custom-edited
+    await expect(ruleInput).toContainText('arithmetic');
+
+    // 4. Launch Multi-Agent Analysis
+    const launchBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
+    await launchBtn.click();
+
+    // 5. Verify analysis completes with NO_RISK_FOUND and extracts INV-MATH-001
+    await expect(page.locator('text=Formal Invariants Extracted (Agent A)')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator('text=INV-MATH-001')).toBeVisible();
+    await expect(page.locator('text=Arithmetic & Core Computational Logic')).toBeVisible();
+
+    // CRITICAL REGRESSION ASSERTION: INV-AUTH-001 and Authentication scope MUST NOT exist anywhere
+    await expect(page.locator('text=INV-AUTH-001')).not.toBeVisible();
+    await expect(page.locator('text=Authentication & API Gateway')).not.toBeVisible();
+
+    // Verify 0 risk findings
+    await expect(page.locator('text=No logical regression or invariant violations detected')).toBeVisible();
+    await expect(page.locator('text=No Risk Detected')).toBeVisible();
+  });
+
+  test('E2E-11: Clean Arithmetic preset loads consistent code & rule and verifies cleanly', async ({
+    page,
+  }) => {
+    await page.goto('/analyze');
+
+    // Click Clean Arithmetic preset
+    const cleanPresetBtn = page.getByRole('button', { name: /Clean Arithmetic/i });
+    await expect(cleanPresetBtn).toBeVisible();
+    await cleanPresetBtn.click();
+
+    const snippetInput = page.getByRole('textbox', { name: /Target Code/i });
+    const ruleInput = page.locator('#business-rule-input');
+    await expect(snippetInput).toContainText('function add');
+    await expect(ruleInput).toContainText('arithmetic addition');
+
+    const launchBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
+    await launchBtn.click();
+
+    await expect(page.locator('text=INV-MATH-001')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=No Risk Detected')).toBeVisible();
+    await expect(page.locator('text=INV-AUTH-001')).not.toBeVisible();
+    await expect(page.locator('text=INV-REFUND-001')).not.toBeVisible();
+  });
+
+  test('E2E-12: Domain mismatch between code and custom rule displays visible notice without certifying mismatched rule', async ({
+    page,
+  }) => {
+    await page.goto('/analyze');
+
+    // Fill arithmetic code
+    const snippetInput = page.getByRole('textbox', { name: /Target Code/i });
+    await snippetInput.fill('export function multiply(a: number, b: number): number { return a * b; }');
+
+    // Intentionally enter a custom payment business rule
+    const ruleInput = page.locator('#business-rule-input');
+    await ruleInput.fill('A settled refund must strictly execute at most once per idempotency key.');
+
+    // Verify domain mismatch warning is displayed in UI prior to launch
+    const mismatchWarning = page.locator('[data-testid="domain-mismatch-warning"]');
+    await expect(mismatchWarning).toBeVisible();
+    await expect(mismatchWarning).toContainText('Domain Notice:');
+
+    // Launch analysis
+    const launchBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
+    await launchBtn.click();
+
+    // Verify Domain Mismatch Banner appears in results card
+    await expect(page.locator('[data-testid="domain-mismatch-banner"]')).toBeVisible({
+      timeout: 10000,
+    });
+    // Invariant evaluates arithmetic safety, NOT payment
+    await expect(page.locator('text=INV-MATH-001')).toBeVisible();
+    await expect(page.locator('text=INV-REFUND-001')).not.toBeVisible();
+    await expect(page.locator('text=No Risk Detected')).toBeVisible();
+  });
+
+  test('E2E-13: Rapid consecutive requests drop stale in-flight responses without race condition', async ({
+    page,
+  }) => {
+    await page.goto('/analyze');
+
+    // 1. Load Payment preset first
+    const paymentPreset = page.getByRole('button', { name: /Payment Race/i });
+    await paymentPreset.click();
+
+    // 2. Launch analysis
+    const launchBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
+    await launchBtn.click();
+
+    // 3. Immediately switch to Clean Arithmetic preset and re-launch
+    const cleanPreset = page.getByRole('button', { name: /Clean Arithmetic/i });
+    await cleanPreset.click();
+    await launchBtn.click();
+
+    // 4. Verify only the latest request (Clean Arithmetic) is rendered
+    await expect(page.locator('text=Formal Invariants Extracted (Agent A)')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator('text=INV-MATH-001')).toBeVisible();
+    await expect(page.locator('text=No Risk Detected')).toBeVisible();
+    // Verify Payment race findings are NOT displayed
+    await expect(page.locator('text=RISK-001')).not.toBeVisible();
+  });
 });

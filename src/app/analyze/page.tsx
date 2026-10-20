@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   GitPullRequest,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AnalysisResult } from '@/lib/schemas/agent-schemas';
+import { detectDomain } from '@/lib/agents/requirement-agent';
 
 export default function AnalysisWorkspacePage() {
   const [activeTab, setActiveTab] = useState<'github' | 'snippet'>('snippet');
@@ -27,6 +28,12 @@ export default function AnalysisWorkspacePage() {
     'A settled payment can create at most one refund side effect for a given idempotency key, even with repeated requests.'
   );
 
+  const [presetActive, setPresetActive] = useState<'payment' | 'jwt' | 'clean' | null>(null);
+  const [isUserEditedRule, setIsUserEditedRule] = useState<boolean>(false);
+
+  const activeRequestIdRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,35 +41,63 @@ export default function AnalysisWorkspacePage() {
   const [githubPrError, setGithubPrError] = useState<string | null>(null);
   const [businessRuleError, setBusinessRuleError] = useState<string | null>(null);
 
+  // Domain compatibility notice between code and business rule
+  const codeDomain = detectDomain(codeSnippet);
+  const ruleDomain = detectDomain(businessRule);
+  const domainMismatchWarning =
+    codeSnippet.trim().length > 0 &&
+    businessRule.trim().length > 0 &&
+    codeDomain === 'arithmetic' &&
+    (ruleDomain === 'auth' || ruleDomain === 'payment')
+      ? `Domain Notice: Business rule specifies ${ruleDomain.toUpperCase()} domain constraints, but the target code is pure arithmetic. FlowGuard will enforce general pure-function invariants.`
+      : null;
+
   const handleRunAnalysis = async () => {
-    // Reset any previous analysis report and prior errors immediately
+    // Reset prior reports and errors immediately on new run attempt
     setResult(null);
     setError(null);
     setCodeSnippetError(null);
     setGithubPrError(null);
     setBusinessRuleError(null);
 
-    // Business rule validation
+    // Validate inputs comprehensively so all appropriate errors appear
+    let hasValidationError = false;
+
     if (!businessRule || businessRule.trim().length < 10) {
       setBusinessRuleError('Business rule must be at least 10 characters long.');
-      setError('Business rule must be at least 10 characters long.');
-      return;
+      hasValidationError = true;
     }
 
-    // Input mode validation
     if (activeTab === 'github') {
       if (!githubPrUrl || !githubPrUrl.trim()) {
         setGithubPrError('Please enter a valid public GitHub PR URL.');
-        setError('GitHub PR URL is required.');
-        return;
+        hasValidationError = true;
       }
     } else {
       if (!codeSnippet || !codeSnippet.trim()) {
         setCodeSnippetError('Code snippet is required and cannot be empty.');
-        setError('Code snippet is required and cannot be empty.');
-        return;
+        hasValidationError = true;
       }
     }
+
+    if (hasValidationError) {
+      setError(
+        !businessRule || businessRule.trim().length < 10
+          ? 'Business rule must be at least 10 characters long.'
+          : activeTab === 'github'
+          ? 'GitHub PR URL is required.'
+          : 'Code snippet is required and cannot be empty.'
+      );
+      return;
+    }
+
+    // Cancel in-flight request to prevent async race conditions
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentRequestId = ++activeRequestIdRef.current;
 
     setLoading(true);
     try {
@@ -74,13 +109,24 @@ export default function AnalysisWorkspacePage() {
         payload.githubPrUrl = githubPrUrl.trim();
       } else {
         payload.codeSnippet = codeSnippet.trim();
-        payload.filePaths = ['src/payment/refund-service.ts'];
+        // Dynamically infer relevant file path based on code domain
+        const cDomain = detectDomain(codeSnippet);
+        if (cDomain === 'auth') {
+          payload.filePaths = ['src/auth/jwt-service.ts'];
+        } else if (cDomain === 'payment') {
+          payload.filePaths = ['src/payment/refund-service.ts'];
+        } else if (cDomain === 'arithmetic') {
+          payload.filePaths = ['src/math/arithmetic.ts'];
+        } else {
+          payload.filePaths = ['src/service.ts'];
+        }
       }
 
       const res = await fetch('/api/v1/analyses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -89,22 +135,44 @@ export default function AnalysisWorkspacePage() {
       }
 
       const data: AnalysisResult = await res.json();
+      // Drop response if a newer request has already been triggered
+      if (currentRequestId !== activeRequestIdRef.current) {
+        return;
+      }
       setResult(data);
     } catch (err: any) {
-      setError(err.message || 'Analysis pipeline failed');
-      setResult(null);
+      if (err.name === 'AbortError') {
+        return; // Stale request aborted — do not show error
+      }
+      if (currentRequestId === activeRequestIdRef.current) {
+        setError(err.message || 'Analysis pipeline failed');
+        setResult(null);
+      }
     } finally {
-      setLoading(false);
+      if (currentRequestId === activeRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleLoadSamplePr = () => {
     setActiveTab('github');
     setGithubPrUrl('https://github.com/allfridhosaragii/FlowGuard-AI/pull/1');
+    setBusinessRule(
+      'A settled payment can create at most one refund side effect for a given idempotency key, even under concurrent retries.'
+    );
+    setPresetActive('payment');
+    setIsUserEditedRule(false);
   };
 
   const handleLoadPreset = (type: 'payment' | 'jwt' | 'clean') => {
     setActiveTab('snippet');
+    setPresetActive(type);
+    setIsUserEditedRule(false);
+    setError(null);
+    setCodeSnippetError(null);
+    setBusinessRuleError(null);
+
     if (type === 'payment') {
       setCodeSnippet(
 `async function processRefund(paymentId, idempotencyKey, amount) {
@@ -134,12 +202,25 @@ export default function AnalysisWorkspacePage() {
       );
     } else {
       setCodeSnippet(
-`async function checkHealth(req, res) {
-  const uptime = process.uptime();
-  return res.json({ status: 'OK', uptime });
+`export function add(a: number, b: number): number {
+  return a + b;
 }`
       );
-      setBusinessRule('Health check endpoint must report current process status without state mutations.');
+      setBusinessRule(
+        'The add function must perform pure arithmetic addition of two numbers without external side effects or state mutations.'
+      );
+    }
+  };
+
+  const handleClearCode = () => {
+    setCodeSnippet('');
+    setCodeSnippetError(null);
+    setResult(null);
+    // When clearing code, also clear the business rule if it came from a preset or default
+    if (presetActive !== null || !isUserEditedRule) {
+      setBusinessRule('');
+      setPresetActive(null);
+      setIsUserEditedRule(false);
     }
   };
 
@@ -257,11 +338,7 @@ export default function AnalysisWorkspacePage() {
                     id="btn-clear-code"
                     data-testid="btn-clear-code"
                     aria-label="Clear code snippet input"
-                    onClick={() => {
-                      setCodeSnippet('');
-                      setCodeSnippetError(null);
-                      setResult(null);
-                    }}
+                    onClick={handleClearCode}
                     className="text-[11px] text-muted hover:text-danger hover:underline font-medium min-h-[36px] flex items-center px-1 rounded focus-visible:ring-2 focus-visible:ring-danger"
                   >
                     Clear Code
@@ -293,6 +370,16 @@ export default function AnalysisWorkspacePage() {
                   >
                     JWT Leak
                   </button>
+                  <button
+                    type="button"
+                    id="btn-preset-clean"
+                    data-testid="btn-preset-clean"
+                    aria-label="Load Clean Arithmetic sample scenario"
+                    onClick={() => handleLoadPreset('clean')}
+                    className="px-2.5 py-1.5 text-xs rounded border border-border bg-surface text-foreground hover:bg-surface-muted transition-colors font-medium min-h-[36px] flex items-center focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    Clean Arithmetic
+                  </button>
                 </div>
               </div>
 
@@ -306,8 +393,33 @@ export default function AnalysisWorkspacePage() {
                 aria-describedby={codeSnippetError ? 'code-snippet-error' : undefined}
                 value={codeSnippet}
                 onChange={(e) => {
-                  setCodeSnippet(e.target.value);
-                  if (codeSnippetError && e.target.value.trim()) setCodeSnippetError(null);
+                  const val = e.target.value;
+                  setCodeSnippet(val);
+                  if (codeSnippetError && val.trim()) setCodeSnippetError(null);
+                  if (val.trim() === '') {
+                    if (!isUserEditedRule) {
+                      setBusinessRule('');
+                      setPresetActive(null);
+                    }
+                  } else {
+                    if (!isUserEditedRule) {
+                      const newDomain = detectDomain(val);
+                      if (newDomain === 'arithmetic' && (businessRule === '' || detectDomain(businessRule) !== 'arithmetic')) {
+                        setBusinessRule(
+                          'The function must perform pure arithmetic computation without side effects or external mutations.'
+                        );
+                      } else if (newDomain === 'auth' && (businessRule === '' || detectDomain(businessRule) !== 'auth')) {
+                        setBusinessRule(
+                          'JWT token verification must strictly validate expiration, cryptographic signature, and enforce algorithm integrity without bypass.'
+                        );
+                      } else if (newDomain === 'payment' && (businessRule === '' || detectDomain(businessRule) !== 'payment')) {
+                        setBusinessRule(
+                          'A settled payment can create at most one refund side effect for a given idempotency key, even with repeated requests.'
+                        );
+                      }
+                      setPresetActive(null);
+                    }
+                  }
                 }}
                 className={`w-full p-3 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent resize-none leading-relaxed transition-colors ${
                   codeSnippetError
@@ -347,6 +459,7 @@ export default function AnalysisWorkspacePage() {
               value={businessRule}
               onChange={(e) => {
                 setBusinessRule(e.target.value);
+                setIsUserEditedRule(true);
                 if (businessRuleError && e.target.value.trim().length >= 10) setBusinessRuleError(null);
               }}
               className={`w-full p-2.5 rounded-md border text-xs text-foreground focus-visible:ring-2 focus-visible:ring-accent resize-none leading-relaxed transition-colors ${
@@ -366,6 +479,16 @@ export default function AnalysisWorkspacePage() {
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{businessRuleError}</span>
               </p>
+            )}
+            {domainMismatchWarning && (
+              <div
+                role="note"
+                data-testid="domain-mismatch-warning"
+                className="p-2.5 rounded bg-warning/10 border border-warning/30 text-[11px] text-warning flex items-start gap-1.5"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>{domainMismatchWarning}</span>
+              </div>
             )}
           </div>
 
@@ -450,6 +573,26 @@ export default function AnalysisWorkspacePage() {
                   </span>
                 </div>
               </div>
+
+              {/* Domain Mismatch Warning Banner */}
+              {result.notes.some((n) => n.startsWith('Domain Notice:')) && (
+                <div
+                  role="alert"
+                  data-testid="domain-mismatch-banner"
+                  className="p-3.5 rounded-lg bg-warning/10 border border-warning/30 text-xs text-warning space-y-1.5"
+                >
+                  <div className="flex items-center gap-2 font-bold text-foreground">
+                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+                    <span>Domain Mismatch Notice</span>
+                  </div>
+                  <p className="text-foreground/90 leading-relaxed font-medium">
+                    {result.notes.find((n) => n.startsWith('Domain Notice:'))}
+                  </p>
+                  <p className="text-[11px] text-muted">
+                    Note: The specified business rule domain does not align with the target code snippet. FlowGuard evaluated appropriate safety invariants for the code context; the mismatched rule is NOT certified or verified.
+                  </p>
+                </div>
+              )}
 
               {/* Multi-Agent Execution Traces */}
               <div className="space-y-2">

@@ -129,4 +129,99 @@ diff --git a/src/math.ts b/src/math.ts
       })
     ).rejects.toThrow(/at least 10 characters/);
   });
+
+  describe('Domain Isolation & False-Positive Invariant Hardening', () => {
+    const jwtRule =
+      'JWT token verification must strictly validate expiration, cryptographic signature, and enforce algorithm integrity without bypass.';
+    const paymentRule =
+      'A settled payment can create at most one refund side effect for a given idempotency key, even under concurrent retries.';
+    const arithmeticRule =
+      'The add function must perform pure arithmetic addition of two numbers without external side effects or state mutations.';
+    const arithmeticSnippet = `
+export function add(a: number, b: number): number {
+  return a + b;
+}
+`;
+    const jwtSnippet = `
+export function verifyToken(req, res, next) {
+  const token = req.headers['authorization'];
+  const decoded = jwt.decode(token, { complete: true });
+  if (decoded.header.alg === 'none') {
+    req.user = decoded.payload;
+    return next();
+  }
+}
+`;
+
+    it('Context Isolation: arithmetic code with stale JWT rule extracts INV-MATH-001 and NEVER INV-AUTH-001', async () => {
+      const res = await RequirementAgent.analyze(jwtRule, undefined, arithmeticSnippet);
+
+      expect(res.invariants.length).toBeGreaterThanOrEqual(1);
+      // Invariant MUST be arithmetic, not authentication!
+      expect(res.invariants[0].id).toBe('INV-MATH-001');
+      expect(res.invariants[0].scope).toContain('Arithmetic');
+      expect(res.invariants.some((inv) => inv.id === 'INV-AUTH-001')).toBe(false);
+      expect(res.domainMismatch).toBe(true);
+      expect(res.mismatchNotice).toContain('Domain Notice:');
+    });
+
+    it('Context Isolation: arithmetic code with payment rule extracts INV-MATH-001 and NEVER INV-REFUND-001', async () => {
+      const res = await RequirementAgent.analyze(paymentRule, undefined, arithmeticSnippet);
+
+      expect(res.invariants.length).toBeGreaterThanOrEqual(1);
+      expect(res.invariants[0].id).toBe('INV-MATH-001');
+      expect(res.invariants.some((inv) => inv.id === 'INV-REFUND-001')).toBe(false);
+      expect(res.domainMismatch).toBe(true);
+    });
+
+    it('Arithmetic snippet with matching arithmetic rule extracts INV-MATH-001 without mismatch', async () => {
+      const res = await RequirementAgent.analyze(arithmeticRule, undefined, arithmeticSnippet);
+
+      expect(res.invariants.length).toBeGreaterThanOrEqual(1);
+      expect(res.invariants[0].id).toBe('INV-MATH-001');
+      expect(res.domainMismatch).toBe(false);
+    });
+
+    it('JWT code with matching JWT rule extracts INV-AUTH-001 without mismatch', async () => {
+      const res = await RequirementAgent.analyze(jwtRule, undefined, jwtSnippet);
+
+      expect(res.invariants.length).toBeGreaterThanOrEqual(1);
+      expect(res.invariants[0].id).toBe('INV-AUTH-001');
+      expect(res.domainMismatch).toBe(false);
+    });
+
+    it('End-to-End Orchestrator: benign arithmetic code produces 0 findings, NO_RISK_FOUND, and no auth invariants even if rule is JWT', async () => {
+      const result = await AgentOrchestrator.run({
+        businessRule: jwtRule,
+        sourceType: 'MANUAL_CODE',
+        sourceReference: 'arithmetic-benign',
+        codeDiff: arithmeticSnippet,
+        filePaths: ['src/math/arithmetic.ts'],
+      });
+
+      expect(result.verdict).toBe('NO_RISK_FOUND');
+      expect(result.findings.length).toBe(0);
+      expect(result.plans.length).toBe(0);
+      expect(result.invariants.length).toBeGreaterThanOrEqual(1);
+      expect(result.invariants[0].id).toBe('INV-MATH-001');
+      // Critical assertion: NO INV-AUTH-001 in result!
+      expect(result.invariants.some((inv) => inv.id.includes('AUTH'))).toBe(false);
+      expect(result.notes.some((n) => n.includes('Domain Notice:'))).toBe(true);
+    });
+
+    it('End-to-End Orchestrator: vulnerable JWT code produces POTENTIAL finding (RISK-002) with INV-AUTH-001', async () => {
+      const result = await AgentOrchestrator.run({
+        businessRule: jwtRule,
+        sourceType: 'MANUAL_CODE',
+        sourceReference: 'jwt-vulnerable',
+        codeDiff: jwtSnippet,
+        filePaths: ['src/auth/jwt-service.ts'],
+      });
+
+      expect(result.verdict).toBe('POTENTIAL');
+      expect(result.findings.length).toBeGreaterThanOrEqual(1);
+      expect(result.findings[0].id).toBe('RISK-002');
+      expect(result.invariants[0].id).toBe('INV-AUTH-001');
+    });
+  });
 });

@@ -7,8 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-30%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-9%20Passing-success)](tests/e2e.spec.ts)
+[![Vitest](https://img.shields.io/badge/Vitest-58%20Passing-success)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-37%20Passing-success)](tests/e2e.spec.ts)
 
 🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
@@ -24,7 +24,7 @@ Traditional pull request code reviews and static linters check syntax, types, an
 - Invalid state machine transitions under network jitter
 
 FlowGuard AI bridges the gap between **code review** and **runtime verification**:
-1. **Agent A (Requirement Analyst)**: Extracts formal mathematical invariants from human business rules.
+1. **Agent A (Requirement Analyst)**: Extracts formal mathematical invariants from human business rules with strict domain isolation and context cross-validation.
 2. **Agent B (Risk Hunter)**: Analyzes PR diffs for race-condition windows and non-atomic state mutations (marked strictly as `POTENTIAL`).
 3. **Agent C (Verification Planner)**: Synthesizes reproducible test specifications and **TestSprite 3.0** assertions targeting executable verification endpoints.
 4. **Controlled Verification Lab**: Executes real concurrent asynchronous requests against target state machines, proving whether an invariant holds or fails.
@@ -64,10 +64,10 @@ FlowGuard AI supports:
 FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# 1. Run all 30 Vitest unit & integration tests:
+# 1. Run all 58 Vitest unit & integration tests:
 npm test
 
-# 2. Run Playwright End-to-End browser tests (headless Chromium):
+# 2. Run all 37 Playwright End-to-End browser tests (headless Chromium):
 npx playwright test
 
 # 3. Run Vitest in watch mode:
@@ -84,13 +84,19 @@ npm run test:watch
   - `V-06` & `V-07`: Input bounds and required parameters are strictly enforced.
   - `V-08`: Concurrency labeled accurately as `concurrent asynchronous requests`.
   - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
-- **`tests/agents.test.ts` (9 tests)**:
-  - Invariant extraction, risk hunting (stripping comments to avoid false-positive locks), benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, and 6-stage orchestrator pipeline.
+- **`tests/agents.test.ts` (15 tests)**:
+  - Formal invariant extraction, comment stripping in risk hunting, benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, 6-stage orchestrator pipeline, and domain isolation hardening:
+    - Arithmetic code with stale JWT rule extracts `INV-MATH-001` and never leaks `INV-AUTH-001`.
+    - Arithmetic code with payment rule extracts `INV-MATH-001` and never leaks `INV-REFUND-001`.
+    - Arithmetic code with matching arithmetic rule extracts `INV-MATH-001` with zero mismatch.
+    - JWT code with matching JWT rule extracts `INV-AUTH-001` with zero mismatch.
+    - End-to-end benign arithmetic analysis produces 0 findings, `NO_RISK_FOUND`, and no auth invariants even with conflicting rule.
+    - End-to-end vulnerable JWT code produces `POTENTIAL` risk finding (`RISK-002`) with `INV-AUTH-001`.
 - **`tests/api-integration.test.ts` (12 tests)**:
   - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation (preventing fake `NO_RISK_FOUND`), and partial analysis metadata.
 - **`tests/github.test.ts` (22 tests)**:
   - Strict URL validation, unified diff parser, per-file patch filtering, regression test proving skipped files are excluded from Risk Hunter input, oversized diff handling preserving patch boundaries, single-file line truncation, pagination (>100 and >300 files), incomplete pagination API error handling, rate limits (403), 404s, binary file omission, renamed files, and honest error on 0 readable code patches.
-- **`tests/e2e.spec.ts` (9 tests)**:
+- **`tests/e2e.spec.ts` (13 tests)**:
   - `E2E-01`: Landing page navigation and honest CTAs.
   - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
   - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
@@ -100,6 +106,10 @@ npm run test:watch
   - `E2E-07 (LAB-007)`: Empty idempotency key rejected with actionable validation and clears previous report.
   - `E2E-08 (ANA-004)`: Empty code snippet rejected before analysis without fake report.
   - `E2E-09 (UX-001)`: Mobile viewport (390x844) supports all primary user flows.
+  - `E2E-10`: Context Isolation — JWT preset &rarr; Clear Code &rarr; arithmetic snippet &rarr; Launch Analysis does NOT leak `INV-AUTH-001`.
+  - `E2E-11`: Clean Arithmetic preset loads consistent code & rule and verifies cleanly (`INV-MATH-001`).
+  - `E2E-12`: Domain mismatch between code and custom rule displays visible notice without certifying mismatched rule.
+  - `E2E-13`: Rapid consecutive requests drop stale in-flight responses without race condition.
 - **`tests/keyboard-accessibility.spec.ts` (4 tests)**:
   - `A11Y-01`: Skip-to-main-content landmark navigation via first Tab key press (WCAG 2.4.1).
   - `A11Y-02 (UX-002)`: Full keyboard focus verification (`toBeFocused()`) on Code Snippet, Business Rule, and Launch Multi-Agent Analysis button with Tab, Shift+Tab, and Enter/Space activation.

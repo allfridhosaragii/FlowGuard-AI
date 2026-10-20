@@ -60,7 +60,7 @@ export class AgentOrchestrator {
 
     // Stage 3: EXTRACTING_RULE (Agent A)
     const stage3Start = Date.now();
-    const reqResult = await RequirementAgent.analyze(input.businessRule, input.prContext);
+    const reqResult = await RequirementAgent.analyze(input.businessRule, input.prContext, diff);
     stages.push({
       stage: 'EXTRACTING_RULE',
       status: 'SUCCESS',
@@ -112,6 +112,10 @@ export class AgentOrchestrator {
       );
     } else {
       notes.push(`Neural inference executed via model: ${modelUsed}.`);
+    }
+
+    if (reqResult.domainMismatch && reqResult.mismatchNotice) {
+      notes.push(reqResult.mismatchNotice);
     }
 
     // Partial analysis coverage note
