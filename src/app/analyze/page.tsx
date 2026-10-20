@@ -21,22 +21,7 @@ import { AnalysisResult } from '@/lib/schemas/agent-schemas';
 export default function AnalysisWorkspacePage() {
   const [activeTab, setActiveTab] = useState<'github' | 'snippet'>('snippet');
   const [githubPrUrl, setGithubPrUrl] = useState<string>('');
-  const [codeSnippet, setCodeSnippet] = useState<string>(
-`// Sample Vulnerable Concurrency Flow
-async function processRefund(paymentId, idempotencyKey, amount) {
-  // Read existing state without atomic lock
-  const existing = await db.refunds.findOne({ idempotencyKey });
-  if (existing) return existing;
-
-  // Asynchronous gateway window
-  await sleep(25);
-
-  // Unprotected write side-effect
-  const refund = await db.refunds.create({ paymentId, idempotencyKey, amount });
-  await paymentGateway.issueRefund(paymentId, amount);
-  return refund;
-}`
-  );
+  const [codeSnippet, setCodeSnippet] = useState<string>('');
   const [businessRule, setBusinessRule] = useState<string>(
     'A settled payment can create at most one refund side effect for a given idempotency key, even with repeated requests.'
   );
@@ -59,7 +44,7 @@ async function processRefund(paymentId, idempotencyKey, amount) {
     // Business rule validation
     if (!businessRule || businessRule.trim().length < 10) {
       setBusinessRuleError('Business rule must be at least 10 characters long.');
-      setError('Validation Error: Business rule must be at least 10 characters.');
+      setError('Business rule must be at least 10 characters long.');
       return;
     }
 
@@ -67,13 +52,13 @@ async function processRefund(paymentId, idempotencyKey, amount) {
     if (activeTab === 'github') {
       if (!githubPrUrl || !githubPrUrl.trim()) {
         setGithubPrError('Please enter a valid public GitHub PR URL.');
-        setError('Validation Error: GitHub PR URL is required.');
+        setError('GitHub PR URL is required.');
         return;
       }
     } else {
       if (!codeSnippet || !codeSnippet.trim()) {
         setCodeSnippetError('Code snippet is required and cannot be empty.');
-        setError('Validation Error: Code snippet is required before launching multi-agent analysis.');
+        setError('Code snippet is required and cannot be empty.');
         return;
       }
     }
@@ -249,43 +234,62 @@ async function processRefund(paymentId, idempotencyKey, amount) {
 
           {/* Tab 2: Code Snippet */}
           {activeTab === 'snippet' && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-foreground">
-                  Target Code / Diff Snippet
+                <label htmlFor="code-snippet-input" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <span>Target Code / Diff Snippet</span>
+                  <span className="text-[10px] text-muted font-normal">(Required)</span>
                 </label>
-                <div className="flex items-center gap-1.5 text-[10px]">
+                {codeSnippet ? (
                   <button
                     type="button"
-                    onClick={() => handleLoadPreset('payment')}
-                    className="text-accent hover:underline"
-                  >
-                    Payment Race
-                  </button>
-                  <span className="text-muted">•</span>
-                  <button
-                    type="button"
-                    onClick={() => handleLoadPreset('jwt')}
-                    className="text-accent hover:underline"
-                  >
-                    JWT Leak
-                  </button>
-                  <span className="text-muted">•</span>
-                  <button
-                    type="button"
+                    id="btn-clear-code"
+                    data-testid="btn-clear-code"
                     onClick={() => {
                       setCodeSnippet('');
                       setCodeSnippetError(null);
                       setResult(null);
                     }}
-                    className="text-muted hover:text-danger hover:underline"
+                    className="text-[11px] text-muted hover:text-danger hover:underline font-medium"
                   >
                     Clear Code
                   </button>
+                ) : null}
+              </div>
+
+              {/* Sample Preset Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-surface-muted/30">
+                <span className="text-[11px] text-muted font-medium">Load sample scenario:</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    id="btn-preset-payment"
+                    data-testid="btn-preset-payment"
+                    onClick={() => handleLoadPreset('payment')}
+                    className="px-2.5 py-1 text-xs rounded border border-accent/40 bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors font-medium"
+                  >
+                    Payment Race
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-preset-jwt"
+                    data-testid="btn-preset-jwt"
+                    onClick={() => handleLoadPreset('jwt')}
+                    className="px-2.5 py-1 text-xs rounded border border-border bg-surface text-foreground hover:bg-surface-muted transition-colors font-medium"
+                  >
+                    JWT Leak
+                  </button>
                 </div>
               </div>
+
               <textarea
+                id="code-snippet-input"
+                name="codeSnippet"
                 rows={9}
+                aria-label="Target Code or Diff Snippet"
+                aria-required="true"
+                aria-invalid={!!codeSnippetError}
+                aria-describedby={codeSnippetError ? 'code-snippet-error' : undefined}
                 value={codeSnippet}
                 onChange={(e) => {
                   setCodeSnippet(e.target.value);
@@ -296,10 +300,15 @@ async function processRefund(paymentId, idempotencyKey, amount) {
                     ? 'border-danger bg-danger/5 focus:border-danger'
                     : 'border-border bg-background focus:border-accent'
                 }`}
-                placeholder="Paste code or diff here..."
+                placeholder="Paste code or diff here, or click 'Payment Race' above to load a sample..."
               />
               {codeSnippetError && (
-                <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+                <p
+                  id="code-snippet-error"
+                  role="alert"
+                  data-testid="code-snippet-error"
+                  className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1"
+                >
                   <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>{codeSnippetError}</span>
                 </p>
@@ -309,12 +318,18 @@ async function processRefund(paymentId, idempotencyKey, amount) {
 
           {/* Business Rule Textarea */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <label htmlFor="business-rule-input" className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Business Rule to Verify</span>
               <span className="text-[10px] text-muted">10–2,000 chars</span>
             </label>
             <textarea
+              id="business-rule-input"
+              name="businessRule"
               rows={3}
+              aria-label="Business Rule to Verify"
+              aria-required="true"
+              aria-invalid={!!businessRuleError}
+              aria-describedby={businessRuleError ? 'business-rule-error' : undefined}
               value={businessRule}
               onChange={(e) => {
                 setBusinessRule(e.target.value);
@@ -328,7 +343,12 @@ async function processRefund(paymentId, idempotencyKey, amount) {
               placeholder="State the invariant that must hold true (e.g. at most 1 refund per payment)..."
             />
             {businessRuleError && (
-              <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+              <p
+                id="business-rule-error"
+                role="alert"
+                data-testid="business-rule-error"
+                className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1"
+              >
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{businessRuleError}</span>
               </p>
@@ -358,7 +378,11 @@ async function processRefund(paymentId, idempotencyKey, amount) {
           </div>
 
           {error && (
-            <div className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+            <div
+              role="alert"
+              data-testid="analysis-error-banner"
+              className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2"
+            >
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>

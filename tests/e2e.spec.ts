@@ -56,7 +56,12 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
 
     await expect(page.locator('h1')).toContainText('Pull Request & Code Analysis Workspace');
 
-    // Run analysis with default payment snippet
+    // Load Payment Race sample
+    const sampleBtn = page.getByRole('button', { name: /Payment Race/i });
+    await expect(sampleBtn).toBeVisible();
+    await sampleBtn.click();
+
+    // Run analysis with loaded payment snippet
     const analyzeBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
     await expect(analyzeBtn).toBeVisible();
     await analyzeBtn.click();
@@ -150,21 +155,52 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
   }) => {
     await page.goto('/analyze');
 
-    // 1. Clear code snippet
-    const clearBtn = page.getByRole('button', { name: /Clear Code/i });
-    await clearBtn.click();
+    // 1. Locate code snippet textarea and verify it starts empty by default
+    const snippetInput = page.getByRole('textbox', { name: /Target Code/i });
+    await expect(snippetInput).toBeVisible();
+    await expect(snippetInput).toHaveValue('');
 
-    // 2. Click Launch Multi-Agent Analysis
+    // 2. Click Launch Multi-Agent Analysis immediately on empty field
     const launchBtn = page.getByRole('button', { name: /Launch Multi-Agent Analysis/i });
     await launchBtn.click();
 
-    // 3. Verify actionable inline error appears
-    await expect(
-      page.getByText('Code snippet is required and cannot be empty.', { exact: true })
-    ).toBeVisible();
+    // 3. Verify actionable inline error appears and field remains empty
+    await expect(snippetInput).toHaveValue('');
+    await expect(page.locator('#code-snippet-error')).toBeVisible();
+    await expect(page.locator('#code-snippet-error')).toContainText(
+      'Code snippet is required and cannot be empty.'
+    );
+    await expect(page.locator('[data-testid="analysis-error-banner"]')).toContainText(
+      'Code snippet is required and cannot be empty.'
+    );
 
-    // 4. Verify no analysis result report is rendered
+    // 4. Verify no analysis result report is rendered (no fake report)
     await expect(page.locator('text=Run ID:')).not.toBeVisible();
+    await expect(page.locator('text=Analysis Engine Ready')).toBeVisible();
+
+    // 5. Test loading sample scenario via Payment Race button
+    const paymentSampleBtn = page.getByRole('button', { name: /Payment Race/i });
+    await expect(paymentSampleBtn).toBeVisible();
+    await paymentSampleBtn.click();
+    await expect(snippetInput).not.toHaveValue('');
+
+    // 6. Run analysis with loaded sample and verify real report appears
+    await launchBtn.click();
+    await expect(page.locator('text=Formal Invariants Extracted (Agent A)')).toBeVisible({
+      timeout: 10000,
+    });
+
+    // 7. Clear code using dedicated 'Clear Code' button
+    const clearBtn = page.getByRole('button', { name: /Clear Code/i });
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+    await expect(snippetInput).toHaveValue('');
+
+    // 8. Submit again with cleared code and verify previous report is removed
+    await launchBtn.click();
+    await expect(snippetInput).toHaveValue('');
+    await expect(page.locator('#code-snippet-error')).toBeVisible();
+    await expect(page.locator('text=Formal Invariants Extracted (Agent A)')).not.toBeVisible();
     await expect(page.locator('text=Analysis Engine Ready')).toBeVisible();
   });
 
