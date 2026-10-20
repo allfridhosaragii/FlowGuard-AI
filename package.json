@@ -1,21 +1,33 @@
 {
   "name": "flowguard-ai",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Autonomous AI-Powered Risk Detection & Bug Hunting Engine",
-  "main": "index.html",
+  "description": "FlowGuard AI — AI-Powered Bug Hunting & Risk Detection Platform",
   "scripts": {
-    "dev": "npx -y serve .",
-    "deploy": "vercel --prod"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": [
-    "ai",
-    "risk-detection",
-    "bug-hunting",
-    "testsprite",
-    "cybersecurity",
-    "telemetry"
-  ],
-  "author": "Allfridho Saragi <pedoprimasaragi@gmail.com>",
-  "license": "MIT"
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "next": "^15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
 }

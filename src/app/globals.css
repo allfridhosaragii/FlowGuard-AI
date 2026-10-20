@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Design Tokens per 01-DESIGN/03-DESIGN-SYSTEM.md */
+  --bg: #FAFBFC;
+  --surface: #FFFFFF;
+  --surface-muted: #F4F6F8;
+  --text: #17212B;
+  --muted: #536477;
+  --border: #D8E0E7;
+  --accent: #2457A7;
+  --accent-hover: #1C4687;
+  --success: #176B45;
+  --warning: #8A5B13;
+  --danger: #AE2731;
+  --focus: #2E6BE6;
+  --radius: 10px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dark {
+  --bg: #0B0F17;
+  --surface: #111726;
+  --surface-muted: #172136;
+  --text: #F0F4FC;
+  --muted: #8B9BB4;
+  --border: #222E47;
+  --accent: #3B82F6;
+  --accent-hover: #60A5FA;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --focus: #60A5FA;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Accessible focus ring */
+*:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-muted);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
