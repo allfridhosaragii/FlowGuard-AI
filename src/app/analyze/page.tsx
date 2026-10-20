@@ -44,20 +44,49 @@ async function processRefund(paymentId, idempotencyKey, amount) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [codeSnippetError, setCodeSnippetError] = useState<string | null>(null);
+  const [githubPrError, setGithubPrError] = useState<string | null>(null);
+  const [businessRuleError, setBusinessRuleError] = useState<string | null>(null);
 
   const handleRunAnalysis = async () => {
-    setLoading(true);
+    // Reset any previous analysis report and prior errors immediately
+    setResult(null);
     setError(null);
+    setCodeSnippetError(null);
+    setGithubPrError(null);
+    setBusinessRuleError(null);
+
+    // Business rule validation
+    if (!businessRule || businessRule.trim().length < 10) {
+      setBusinessRuleError('Business rule must be at least 10 characters long.');
+      setError('Validation Error: Business rule must be at least 10 characters.');
+      return;
+    }
+
+    // Input mode validation
+    if (activeTab === 'github') {
+      if (!githubPrUrl || !githubPrUrl.trim()) {
+        setGithubPrError('Please enter a valid public GitHub PR URL.');
+        setError('Validation Error: GitHub PR URL is required.');
+        return;
+      }
+    } else {
+      if (!codeSnippet || !codeSnippet.trim()) {
+        setCodeSnippetError('Code snippet is required and cannot be empty.');
+        setError('Validation Error: Code snippet is required before launching multi-agent analysis.');
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       const payload: any = {
-        businessRule,
+        businessRule: businessRule.trim(),
       };
 
       if (activeTab === 'github') {
-        if (!githubPrUrl.trim()) throw new Error('Please enter a valid GitHub PR URL');
         payload.githubPrUrl = githubPrUrl.trim();
       } else {
-        if (!codeSnippet.trim()) throw new Error('Please enter a code snippet or diff');
         payload.codeSnippet = codeSnippet.trim();
         payload.filePaths = ['src/payment/refund-service.ts'];
       }
@@ -77,6 +106,7 @@ async function processRefund(paymentId, idempotencyKey, amount) {
       setResult(data);
     } catch (err: any) {
       setError(err.message || 'Analysis pipeline failed');
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -180,16 +210,30 @@ async function processRefund(paymentId, idempotencyKey, amount) {
           {/* Tab 1: GitHub URL */}
           {activeTab === 'github' && (
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">
-                Public GitHub PR URL
+              <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>Public GitHub PR URL</span>
+                <span className="text-[10px] text-muted">Required</span>
               </label>
               <input
                 type="url"
                 value={githubPrUrl}
-                onChange={(e) => setGithubPrUrl(e.target.value)}
+                onChange={(e) => {
+                  setGithubPrUrl(e.target.value);
+                  if (githubPrError && e.target.value.trim()) setGithubPrError(null);
+                }}
                 placeholder="https://github.com/owner/repo/pull/123"
-                className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus:outline-none focus:border-accent"
+                className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus:outline-none transition-colors ${
+                  githubPrError
+                    ? 'border-danger bg-danger/5 focus:border-danger'
+                    : 'border-border bg-surface-muted/30 focus:border-accent'
+                }`}
               />
+              {githubPrError && (
+                <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{githubPrError}</span>
+                </p>
+              )}
               <div className="flex items-center justify-between text-[11px] text-muted">
                 <span>Read-only fetch. Max 100KB diff, &le;20 files.</span>
                 <button
@@ -210,7 +254,7 @@ async function processRefund(paymentId, idempotencyKey, amount) {
                 <label className="text-xs font-semibold text-foreground">
                   Target Code / Diff Snippet
                 </label>
-                <div className="flex gap-1.5 text-[10px]">
+                <div className="flex items-center gap-1.5 text-[10px]">
                   <button
                     type="button"
                     onClick={() => handleLoadPreset('payment')}
@@ -226,15 +270,40 @@ async function processRefund(paymentId, idempotencyKey, amount) {
                   >
                     JWT Leak
                   </button>
+                  <span className="text-muted">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCodeSnippet('');
+                      setCodeSnippetError(null);
+                      setResult(null);
+                    }}
+                    className="text-muted hover:text-danger hover:underline"
+                  >
+                    Clear Code
+                  </button>
                 </div>
               </div>
               <textarea
                 rows={9}
                 value={codeSnippet}
-                onChange={(e) => setCodeSnippet(e.target.value)}
-                className="w-full p-3 rounded-md border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:border-accent resize-none leading-relaxed"
+                onChange={(e) => {
+                  setCodeSnippet(e.target.value);
+                  if (codeSnippetError && e.target.value.trim()) setCodeSnippetError(null);
+                }}
+                className={`w-full p-3 rounded-md border text-xs font-mono text-foreground focus:outline-none resize-none leading-relaxed transition-colors ${
+                  codeSnippetError
+                    ? 'border-danger bg-danger/5 focus:border-danger'
+                    : 'border-border bg-background focus:border-accent'
+                }`}
                 placeholder="Paste code or diff here..."
               />
+              {codeSnippetError && (
+                <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{codeSnippetError}</span>
+                </p>
+              )}
             </div>
           )}
 
@@ -247,10 +316,23 @@ async function processRefund(paymentId, idempotencyKey, amount) {
             <textarea
               rows={3}
               value={businessRule}
-              onChange={(e) => setBusinessRule(e.target.value)}
-              className="w-full p-2.5 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus:outline-none focus:border-accent resize-none leading-relaxed"
+              onChange={(e) => {
+                setBusinessRule(e.target.value);
+                if (businessRuleError && e.target.value.trim().length >= 10) setBusinessRuleError(null);
+              }}
+              className={`w-full p-2.5 rounded-md border text-xs text-foreground focus:outline-none resize-none leading-relaxed transition-colors ${
+                businessRuleError
+                  ? 'border-danger bg-danger/5 focus:border-danger'
+                  : 'border-border bg-surface-muted/30 focus:border-accent'
+              }`}
               placeholder="State the invariant that must hold true (e.g. at most 1 refund per payment)..."
             />
+            {businessRuleError && (
+              <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{businessRuleError}</span>
+              </p>
+            )}
           </div>
 
           {/* Submit Action */}

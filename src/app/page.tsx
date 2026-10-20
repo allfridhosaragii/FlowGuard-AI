@@ -53,7 +53,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="pt-2 text-xs text-muted flex items-center justify-center gap-6">
+        <div className="pt-2 text-xs text-muted flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-success" /> No account required
           </span>

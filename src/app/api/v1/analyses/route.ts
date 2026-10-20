@@ -5,14 +5,22 @@ import { GitHubPRReader } from '@/lib/github/pr-reader';
 
 const AnalysisRequestSchema = z
   .object({
-    businessRule: z.string().min(10).max(2000),
-    githubPrUrl: z.string().url().optional(),
-    codeSnippet: z.string().max(30000).optional(),
+    businessRule: z.string().trim().min(10, 'Business rule must be at least 10 characters').max(2000),
+    githubPrUrl: z.string().trim().url('Invalid GitHub PR URL format').optional().or(z.literal('')),
+    codeSnippet: z.string().trim().max(30000).optional().or(z.literal('')),
     filePaths: z.array(z.string()).optional(),
   })
-  .refine((data) => data.githubPrUrl || data.codeSnippet, {
-    message: 'Either githubPrUrl or codeSnippet must be provided for analysis',
-  });
+  .refine(
+    (data) => {
+      const hasPr = typeof data.githubPrUrl === 'string' && data.githubPrUrl.trim().length > 0;
+      const hasSnippet = typeof data.codeSnippet === 'string' && data.codeSnippet.trim().length > 0;
+      return hasPr || hasSnippet;
+    },
+    {
+      message: 'Either a valid GitHub PR URL or a non-empty code snippet must be provided for analysis',
+      path: ['codeSnippet'],
+    }
+  );
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,11 +28,12 @@ export async function POST(req: NextRequest) {
     const validated = AnalysisRequestSchema.safeParse(body);
 
     if (!validated.success) {
+      const firstError = validated.error.errors[0]?.message || 'Validation failed for analysis request';
       return NextResponse.json(
         {
           error: {
             code: 'INVALID_INPUT',
-            message: 'Validation failed for analysis request',
+            message: firstError,
             details: validated.error.format(),
           },
         },

@@ -28,11 +28,24 @@ export default function VerificationLabPage() {
   const [loading, setLoading] = useState(false);
   const [evidence, setEvidence] = useState<VerificationEvidence | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [idempotencyKeyError, setIdempotencyKeyError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const handleRunVerification = async () => {
-    setLoading(true);
+    // Clear stale evidence and prior errors immediately on submit
+    setEvidence(null);
     setError(null);
+    setIdempotencyKeyError(null);
+
+    // Client-side validation: enforce non-empty Idempotency Key
+    if (!idempotencyKey || !idempotencyKey.trim()) {
+      setIdempotencyKeyError('Idempotency key is required and cannot be empty.');
+      setError('Validation Error: Idempotency Key is required to test idempotency invariants.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch('/api/v1/lab/verify', {
         method: 'POST',
@@ -40,8 +53,8 @@ export default function VerificationLabPage() {
         body: JSON.stringify({
           fixture,
           concurrency,
-          paymentId,
-          idempotencyKey,
+          paymentId: paymentId.trim(),
+          idempotencyKey: idempotencyKey.trim(),
           amountMinor,
           payloadMode,
         }),
@@ -56,16 +69,48 @@ export default function VerificationLabPage() {
       setEvidence(data);
     } catch (err: any) {
       setError(err.message || 'Unexpected failure while running verification');
+      setEvidence(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     if (!evidence?.testSpriteAssertion) return;
-    navigator.clipboard.writeText(evidence.testSpriteAssertion);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(evidence.testSpriteAssertion);
+        setCopied(true);
+        setCopyFailed(false);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      }
+      throw new Error('Clipboard API unavailable');
+    } catch {
+      // Fallback using temporary textarea for environments where Clipboard API is restricted or headless
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = evidence.testSpriteAssertion;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (successful) {
+          setCopied(true);
+          setCopyFailed(false);
+          setTimeout(() => setCopied(false), 2500);
+          return;
+        }
+      } catch {
+        // Fallback also failed
+      }
+      // Honestly disclose copy failure
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 3000);
+    }
   };
 
   return (
@@ -175,14 +220,32 @@ export default function VerificationLabPage() {
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Idempotency Key</label>
+            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span>Idempotency Key</span>
+              <span className="text-[10px] text-muted">Required</span>
+            </label>
             <input
               type="text"
               value={idempotencyKey}
-              onChange={(e) => setIdempotencyKey(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus:outline-none focus:border-accent"
+              onChange={(e) => {
+                setIdempotencyKey(e.target.value);
+                if (idempotencyKeyError && e.target.value.trim()) {
+                  setIdempotencyKeyError(null);
+                }
+              }}
+              className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus:outline-none transition-colors ${
+                idempotencyKeyError
+                  ? 'border-danger bg-danger/5 focus:border-danger'
+                  : 'border-border bg-surface-muted/30 focus:border-accent'
+              }`}
               placeholder="e.g. retry-token-881"
             />
+            {idempotencyKeyError && (
+              <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{idempotencyKeyError}</span>
+              </p>
+            )}
           </div>
 
           {/* Amount & Mode */}
@@ -362,10 +425,31 @@ export default function VerificationLabPage() {
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover font-medium"
+                    aria-label={copied ? 'Assertion copied to clipboard' : 'Copy test assertion'}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                      copied
+                        ? 'bg-success/15 text-success border border-success/30 font-bold'
+                        : copyFailed
+                        ? 'bg-danger/15 text-danger border border-danger/30 font-bold'
+                        : 'text-accent hover:text-accent-hover bg-surface-muted/60 hover:bg-surface-muted border border-border/80'
+                    }`}
                   >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied' : 'Copy Test'}</span>
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-success stroke-[2.5]" />
+                        <span className="text-success">Copied</span>
+                      </>
+                    ) : copyFailed ? (
+                      <>
+                        <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                        <span className="text-danger">Copy Failed</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Test</span>
+                      </>
+                    )}
                   </button>
                 </div>
                 <pre className="p-3.5 rounded-lg bg-surface-muted text-[11px] font-mono text-foreground border border-border overflow-x-auto leading-relaxed">

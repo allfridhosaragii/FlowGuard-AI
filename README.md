@@ -7,8 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-28%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-5%20Passing-success)](tests/e2e.spec.ts)
+[![Vitest](https://img.shields.io/badge/Vitest-30%20Passing-success)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-9%20Passing-success)](tests/e2e.spec.ts)
 
 🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)

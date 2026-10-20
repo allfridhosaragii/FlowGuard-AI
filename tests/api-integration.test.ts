@@ -177,6 +177,46 @@ async function processRefund(idempotencyKey, amount) {
 
       const data = await response.json();
       expect(data.error.code).toBe('INVALID_INPUT');
+      expect(data.error.message).toContain('Either a valid GitHub PR URL or a non-empty code snippet must be provided');
+    });
+
+    it('returns 400 INVALID_INPUT when codeSnippet contains only whitespace (ANA-004 regression)', async () => {
+      const req = new NextRequest('http://localhost:3000/api/v1/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessRule: 'A settled payment can create at most one refund side effect.',
+          codeSnippet: '   \n  \t  ',
+        }),
+      });
+
+      const response = await analysesHandler(req);
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.error.code).toBe('INVALID_INPUT');
+      expect(data.error.message).toContain('Either a valid GitHub PR URL or a non-empty code snippet must be provided');
+    });
+
+    it('returns 400 INVALID_INPUT with actionable message when idempotencyKey contains only whitespace (LAB-007 regression)', async () => {
+      const req = new NextRequest('http://localhost:3000/api/v1/lab/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixture: 'vulnerable',
+          paymentId: 'pay_api_err',
+          idempotencyKey: '    ',
+          amountMinor: 50000,
+          concurrency: 2,
+        }),
+      });
+
+      const response = await labVerifyHandler(req);
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.error.code).toBe('INVALID_INPUT');
+      expect(data.error.message).toContain('Idempotency key is required and cannot be empty');
     });
   });
 });
