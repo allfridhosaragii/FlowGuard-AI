@@ -113,20 +113,36 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     await runBtn.click();
     await expect(page.locator('text=Execution Run ID:')).toBeVisible({ timeout: 10000 });
 
-    // 2. Clear Idempotency Key
-    const keyInput = page.getByPlaceholder('e.g. retry-token-881');
+    // 2. Locate Idempotency Key via label/role and clear it
+    const keyInput = page.getByRole('textbox', { name: /Idempotency Key/i });
+    await expect(keyInput).toBeVisible();
     await keyInput.fill('');
 
-    // 3. Click Run again with empty key
+    // 3. Verify that the field value is genuinely empty
+    await expect(keyInput).toHaveValue('');
+
+    // 4. Click Run again with empty key
     await runBtn.click();
 
-    // 4. Verify inline validation error appears
-    await expect(
-      page.getByText('Idempotency key is required and cannot be empty.', { exact: true })
-    ).toBeVisible();
+    // 5. Verify field remains genuinely empty after submit
+    await expect(keyInput).toHaveValue('');
 
-    // 5. Verify old execution report is cleared
+    // 6. Verify accessible validation error appears stating 'Idempotency Key is required'
+    await expect(page.locator('#lab-idempotency-key-error')).toBeVisible();
+    await expect(page.locator('#lab-idempotency-key-error')).toContainText('Idempotency Key is required');
+    await expect(page.locator('[data-testid="lab-error-banner"]')).toContainText('Idempotency Key is required');
+
+    // 7. Verify previous execution report is cleared and standing by screen is shown
     await expect(page.locator('text=Execution Run ID:')).not.toBeVisible();
+    await expect(page.getByText('Harness Standing By')).toBeVisible();
+
+    // 8. Test dedicated 'Clear Key' button
+    await keyInput.fill('temp-token-999');
+    await expect(keyInput).toHaveValue('temp-token-999');
+    const clearBtn = page.getByRole('button', { name: /Clear Key/i });
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+    await expect(keyInput).toHaveValue('');
   });
 
   test('E2E-08 (ANA-004): Empty code snippet is rejected before analysis without fake report', async ({

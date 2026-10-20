@@ -216,7 +216,7 @@ async function processRefund(idempotencyKey, amount) {
 
       const data = await response.json();
       expect(data.error.code).toBe('INVALID_INPUT');
-      expect(data.error.message).toContain('Idempotency key is required and cannot be empty');
+      expect(data.error.message).toContain('Idempotency Key is required');
     });
   });
 });

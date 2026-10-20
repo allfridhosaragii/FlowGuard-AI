@@ -5,7 +5,7 @@ import { VerificationRunner } from '@/lib/verification/runner';
 const LabVerifySchema = z.object({
   fixture: z.enum(['vulnerable', 'fixed']),
   paymentId: z.string().trim().min(1, 'Payment ID is required').max(64),
-  idempotencyKey: z.string().trim().min(1, 'Idempotency key is required and cannot be empty').max(128),
+  idempotencyKey: z.string().trim().min(1, 'Idempotency Key is required').max(128),
   amountMinor: z.number().int().min(1, 'Amount must be greater than 0').max(1000000),
   concurrency: z.number().int().min(1, 'Concurrency must be at least 1').max(5, 'Concurrency cannot exceed 5'),
   payloadMode: z.enum(['same_amount', 'differing_amount']).optional(),

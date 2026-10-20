@@ -88,7 +88,7 @@ describe('Controlled Verification Lab - INV-REFUND-001', () => {
         amountMinor: 50000,
         concurrency: 2,
       })
-    ).rejects.toThrow(/Idempotency key is required/);
+    ).rejects.toThrow(/Idempotency key is required/i);
   });
 
   it('V-07: rejects concurrency outside bounds [1, 5]', async () => {

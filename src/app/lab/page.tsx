@@ -40,8 +40,8 @@ export default function VerificationLabPage() {
 
     // Client-side validation: enforce non-empty Idempotency Key
     if (!idempotencyKey || !idempotencyKey.trim()) {
-      setIdempotencyKeyError('Idempotency key is required and cannot be empty.');
-      setError('Validation Error: Idempotency Key is required to test idempotency invariants.');
+      setIdempotencyKeyError('Idempotency Key is required');
+      setError('Idempotency Key is required');
       return;
     }
 
@@ -220,12 +220,33 @@ export default function VerificationLabPage() {
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-              <span>Idempotency Key</span>
-              <span className="text-[10px] text-muted">Required</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="lab-idempotency-key" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span>Idempotency Key</span>
+                <span className="text-[10px] text-muted font-normal">(Required)</span>
+              </label>
+              {idempotencyKey ? (
+                <button
+                  type="button"
+                  id="btn-clear-idempotency-key"
+                  onClick={() => {
+                    setIdempotencyKey('');
+                    setIdempotencyKeyError(null);
+                  }}
+                  className="text-[11px] text-accent hover:underline font-medium"
+                >
+                  Clear Key
+                </button>
+              ) : null}
+            </div>
             <input
+              id="lab-idempotency-key"
+              name="idempotencyKey"
               type="text"
+              aria-label="Idempotency Key"
+              aria-required="true"
+              aria-invalid={!!idempotencyKeyError}
+              aria-describedby={idempotencyKeyError ? 'lab-idempotency-key-error' : undefined}
               value={idempotencyKey}
               onChange={(e) => {
                 setIdempotencyKey(e.target.value);
@@ -238,10 +259,15 @@ export default function VerificationLabPage() {
                   ? 'border-danger bg-danger/5 focus:border-danger'
                   : 'border-border bg-surface-muted/30 focus:border-accent'
               }`}
-              placeholder="e.g. retry-token-881"
+              placeholder="Enter unique idempotency key..."
             />
             {idempotencyKeyError && (
-              <p className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1">
+              <p
+                id="lab-idempotency-key-error"
+                role="alert"
+                data-testid="lab-idempotency-key-error"
+                className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1"
+              >
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{idempotencyKeyError}</span>
               </p>
@@ -297,7 +323,11 @@ export default function VerificationLabPage() {
           </div>
 
           {error && (
-            <div className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+            <div
+              role="alert"
+              data-testid="lab-error-banner"
+              className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2"
+            >
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>

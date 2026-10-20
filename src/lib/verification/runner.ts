@@ -23,7 +23,7 @@ export class VerificationRunner {
 
     // 1. Strict bound checks
     if (!input.idempotencyKey || input.idempotencyKey.trim().length === 0) {
-      throw new Error('Idempotency key is required');
+      throw new Error('Idempotency Key is required');
     }
     if (input.concurrency < 1 || input.concurrency > 5) {
       throw new Error('Concurrency must be between 1 and 5 concurrent asynchronous requests');
