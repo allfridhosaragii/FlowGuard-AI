@@ -103,13 +103,24 @@ export class AgentOrchestrator {
       summary: 'Pipeline execution finished cleanly.',
     });
 
-    const isRealModel = reqResult.isRealModel || riskResult.isRealModel;
-    const modelUsed = reqResult.modelName;
+    const neuralModels = [reqResult, riskResult]
+      .filter((result) => result.isRealModel)
+      .map((result) => result.modelName);
+    const isRealModel = neuralModels.length > 0;
+    const modelUsed = isRealModel
+      ? [...new Set(neuralModels)].join(' + ')
+      : 'deterministic-heuristic-v1';
 
+    // Provenance is per-agent: a successful neural call in one agent does
+    // not magically make the other agent's fallback output neural.
+    notes.push(`Agent A provenance: ${reqResult.isRealModel ? 'neural' : 'heuristic'} (${reqResult.modelName}).`);
+    notes.push(`Agent B provenance: ${riskResult.isRealModel ? 'neural' : 'heuristic'} (${riskResult.modelName}).`);
     if (!isRealModel) {
       notes.push(
-        'Server-side LLM_API_KEY is not configured in this environment. Analysis was performed using deterministic heuristic rule checking. Results are labeled as heuristic.'
+        'Neural model output was not used (model not configured or model output invalid). Analysis was performed using deterministic heuristic rule checking.'
       );
+    } else if (!reqResult.isRealModel || !riskResult.isRealModel) {
+      notes.push('Mixed provenance: at least one agent used heuristic fallback; see per-agent provenance above.');
     } else {
       notes.push(`Neural inference executed via model: ${modelUsed}.`);
     }

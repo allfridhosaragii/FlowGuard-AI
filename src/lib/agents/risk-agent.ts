@@ -44,7 +44,10 @@ ${filePaths.join('\n')}`;
       const response = await AIProvider.generateJSON(systemPrompt, userPrompt);
       try {
         const parsed = JSON.parse(response.content);
-        const findings = (parsed.findings || []).map((f: any, idx: number) =>
+        if (!Array.isArray(parsed.findings)) {
+          throw new Error('Risk model response missing findings array');
+        }
+        const findings = parsed.findings.map((f: any, idx: number) =>
           RiskFindingSchema.parse({
             id: f.id || `RISK-${String(idx + 1).padStart(3, '0')}`,
             ruleId: f.ruleId || invariants[0]?.id || 'INV-001',
@@ -64,8 +67,8 @@ ${filePaths.join('\n')}`;
       } catch (err) {
         return {
           findings: this.heuristicScan(invariants, codeDiff, filePaths),
-          isRealModel: true,
-          modelName: response.modelName,
+          isRealModel: false,
+          modelName: 'deterministic-heuristic-v1 (invalid model output)',
         };
       }
     }
@@ -91,18 +94,19 @@ ${filePaths.join('\n')}`;
     const findings: RiskFinding[] = [];
     const inv = invariants[0] || { id: 'INV-001' };
 
-    // Pattern 1: Concurrency Race / Non-atomic read before write in state-modifying code
-    const hasAsyncGap =
-      /setTimeout|sleep|await\s+new\s+Promise/i.test(codeDiff) ||
-      (/findOne|findById|select.*from/i.test(codeDiff) && /create|insert|update|save/i.test(codeDiff));
-
-    const hasStateMutation =
-      /refund|settle|transfer|deduct|balance|withdraw|charge/i.test(codeDiff);
-
-    // Strip comments to ensure explanatory notes like "// without lock" don't falsely mask the risk
+    // Strip comments BEFORE risk signal detection so comments cannot fabricate findings.
+    // This is still a bounded heuristic scanner, not a full AST parser.
     const codeWithoutComments = codeDiff
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '');
+
+    // Pattern 1: Concurrency Race / Non-atomic read before write in state-modifying code
+    const hasAsyncGap =
+      /setTimeout|sleep|await\s+new\s+Promise/i.test(codeWithoutComments) ||
+      (/findOne|findById|select.*from/i.test(codeWithoutComments) && /create|insert|update|save/i.test(codeWithoutComments));
+
+    const hasStateMutation =
+      /refund|settle|transfer|deduct|balance|withdraw|charge/i.test(codeWithoutComments);
 
     const hasLockingProtection =
       /\.lock\s*\(|acquireLock|inFlightClaims|mutex|atomic\w+|transaction\(|isolation:\s*['"]serializable['"]|pessimistic/i.test(

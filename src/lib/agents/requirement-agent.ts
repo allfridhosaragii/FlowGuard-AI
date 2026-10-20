@@ -98,16 +98,18 @@ Changed Files: ${prContext?.files?.join(', ') || 'N/A'}`;
         );
         return {
           invariants: invariants.length > 0 ? invariants : [this.fallbackInvariant(humanRule, codeDiff)],
-          isRealModel: true,
-          modelName: response.modelName,
+          isRealModel: invariants.length > 0,
+          modelName: invariants.length > 0
+            ? response.modelName
+            : 'heuristic-rule-engine-v1 (model returned no usable invariants)',
           domainMismatch,
           mismatchNotice,
         };
       } catch (err) {
         return {
           invariants: [this.fallbackInvariant(humanRule, codeDiff)],
-          isRealModel: true,
-          modelName: response.modelName,
+          isRealModel: false,
+          modelName: 'heuristic-rule-engine-v1 (invalid model output)',
           domainMismatch,
           mismatchNotice,
         };

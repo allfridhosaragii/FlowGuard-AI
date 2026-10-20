@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-58%20Passing-success)](tests/)
+[![Vitest](https://img.shields.io/badge/Vitest-64%20Passing-success)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/Playwright-37%20Passing-success)](tests/e2e.spec.ts)
 
 🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
@@ -55,7 +55,7 @@ FlowGuard AI bridges the gap between **code review** and **runtime verification*
 FlowGuard AI supports:
 1. **Google Gemini Native REST API**: Direct integration via `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` (e.g. `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`).
 2. **OpenAI-Compatible Providers**: `https://api.openai.com/v1/chat/completions` or any compatible gateway.
-3. **Transparent Heuristic Fallback**: When no API key is provided, FlowGuard AI runs deterministic static AST analysis. The UI explicitly discloses `isRealModel: false` and `heuristic-offline-analyzer (fallback)` — never claiming simulated or heuristic outputs are from a real neural model.
+3. **Transparent Heuristic Fallback**: When no API key is provided, FlowGuard AI runs deterministic bounded heuristic pattern analysis. The UI explicitly discloses `isRealModel: false` and `heuristic-offline-analyzer (fallback)` — never claiming simulated or heuristic outputs are from a real neural model.
 
 ---
 
@@ -64,7 +64,7 @@ FlowGuard AI supports:
 FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# 1. Run all 58 Vitest unit & integration tests:
+# 1. Run all 64 Vitest unit & integration tests:
 npm test
 
 # 2. Run all 37 Playwright End-to-End browser tests (headless Chromium):
@@ -75,6 +75,11 @@ npm run test:watch
 ```
 
 ### Test Coverage Breakdown:
+- **`tests/model-provenance.test.ts` (6 tests)**:
+  - Agent A reports heuristic provenance when neural model returns invalid JSON or empty invariants.
+  - Agent B reports heuristic provenance on malformed neural response and retains neural provenance on clean valid output.
+  - Strips comments before regex scanning so comments alone cannot fabricate false race-condition findings.
+  - AgentOrchestrator exposes per-agent heuristic vs neural provenance and truthful mixed-source model attribution.
 - **`tests/verification.test.ts` (9 tests)**:
   - `V-01`: Vulnerable fixture under concurrency 2 produces duplicate refunds (`VERIFIED_FAIL`).
   - `V-02`: Fixed fixture under concurrency 2 commits exactly once (`VERIFIED_PASS`).
