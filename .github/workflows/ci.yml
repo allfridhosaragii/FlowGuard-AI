@@ -31,7 +31,7 @@ jobs:
       - name: Install Playwright browser dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E, Accessibility & Responsive test suite (37 tests)
+      - name: Run Playwright E2E, Accessibility, Responsive & Mobile Emulation suite (42 tests)
         run: npx playwright test
 
       - name: Upload Playwright Test Artifacts, Traces & Screenshots

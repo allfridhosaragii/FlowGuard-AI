@@ -110,7 +110,7 @@ FlowGuard AI has been tested rigorously across unit, integration, end-to-end, ac
 - **`tests/api-integration.test.ts` (12 tests)**:
   - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation, and partial analysis metadata.
 
-### 2. Playwright End-to-End Suite — 37/37 Passing (100%)
+### 2. Playwright End-to-End Suite — 42/42 Passing (100%)
 - **`tests/e2e.spec.ts` (13 tests)**:
   - `E2E-01`: Landing page navigation and honest CTAs.
   - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
@@ -132,19 +132,26 @@ FlowGuard AI has been tested rigorously across unit, integration, end-to-end, ac
   - `A11Y-04`: Mobile navigation menu keyboard focus, ARIA expanded state, and Escape key dismissal with focus restoration.
 - **`tests/responsive.spec.ts` (20 tests)**:
   - Exhaustive 5-viewport verification matrix:
-    - iPhone SE 1st Gen: `320 × 568`
-    - iPhone SE 2nd Gen: `375 × 667`
-    - iPhone 14: `390 × 844`
+    - iPhone SE 1st Gen: `320 × 568` (Emulated DPR: 2, `hasTouch: true`, `isMobile: true`)
+    - iPhone SE 2nd Gen: `375 × 667` (Emulated DPR: 2, `hasTouch: true`, `isMobile: true`)
+    - iPhone 14: `390 × 844` (Emulated DPR: 3, `hasTouch: true`, `isMobile: true`)
     - iPad Portrait: `768 × 1024`
     - MacBook Desktop: `1440 × 900`
   - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`) on all 5 viewports across Homepage, Verification Lab, and PR Analysis Workspace.
-  - Complete primary flows verified on all screen sizes.
+  - Complete primary flows verified on all screen sizes with real mobile touch tap interactions.
+- **`tests/mobile-device-emulation.spec.ts` (5 tests)**:
+  - `MOB-01`: Deployment HTML Meta Viewport tag (`<meta name="viewport" content="width=device-width, initial-scale=1"/>`) verified on all production & preview routes (`/`, `/lab`, `/analyze`, `/about`).
+  - `MOB-02`: Official `iPhone 14` device profile (DPR: 3, 390x844) touch navigation, hamburger toggle, and zero overflow.
+  - `MOB-03`: Official `iPhone SE` device profile (DPR: 2, 320x568 compact) touch execution of PR Analysis workspace with zero horizontal overflow.
+  - `MOB-04`: Official `Pixel 7` Android mobile profile (DPR: 2.625, 412x839) touch execution of Verification Lab and test assertion clipboard copying.
+  - `MOB-05`: Official `iPad Mini` tablet touch profile (DPR: 2, 768x1024) hybrid navigation and responsive layout integrity.
+  - Verified against both local server and live Vercel Preview deployment (`https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app`).
 
-### 3. Photographic Responsive Evidence — 15 Full-Page Screenshots
+### 3. Photographic Responsive & Mobile Emulation Evidence — 19 Full-Page Screenshots
 Saved in `docs/screenshots/`:
-1. `homepage-iphone-se1-320x568.png` (320px width, 0 overflow)
+1. `homepage-iphone-se1-320x568.png` (320px width, DPR: 2, 0 overflow)
 2. `homepage-iphone-se2-375x667.png`
-3. `homepage-iphone-14-390x844.png`
+3. `homepage-iphone-14-390x844.png` (390px width, DPR: 3 retina)
 4. `homepage-ipad-portrait-768x1024.png`
 5. `homepage-desktop-macbook-1440x900.png`
 6. `lab-evidence-iphone-se1-320x568.png` (320px width, execution timeline intact)
@@ -157,6 +164,10 @@ Saved in `docs/screenshots/`:
 13. `analyze-report-iphone-14-390x844.png`
 14. `analyze-report-ipad-portrait-768x1024.png`
 15. `analyze-report-desktop-macbook-1440x900.png`
+16. `mobile-emulation-iphone14-lab.png` (Official iPhone 14 touch emulation)
+17. `mobile-emulation-iphonese-analyze.png` (Official iPhone SE 320px touch emulation)
+18. `mobile-emulation-pixel7-lab.png` (Official Android Pixel 7 touch emulation)
+19. `mobile-emulation-ipadmini-lab.png` (Official iPad Mini touch emulation)
 
 ---
 

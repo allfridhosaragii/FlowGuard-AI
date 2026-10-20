@@ -18,12 +18,14 @@ export default defineConfig({
     screenshot: 'on',
   },
   outputDir: 'test-results',
-  webServer: {
-    command: process.env.CI ? 'npm run start' : 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 180 * 1000,
-  },
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: process.env.CI ? 'npm run start' : 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 180 * 1000,
+      },
   projects: [
     {
       name: 'chromium',

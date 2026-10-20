@@ -8,7 +8,7 @@
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-64%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-37%20Passing-success)](tests/e2e.spec.ts)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-42%20Passing-success)](tests/e2e.spec.ts)
 
 🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
@@ -67,10 +67,13 @@ FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 # 1. Run all 64 Vitest unit & integration tests:
 npm test
 
-# 2. Run all 37 Playwright End-to-End browser tests (headless Chromium):
+# 2. Run all 42 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
 npx playwright test
 
-# 3. Run Vitest in watch mode:
+# 3. (Optional) Run Playwright directly against live Vercel Preview deployment:
+PLAYWRIGHT_BASE_URL=https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app npx playwright test
+
+# 4. Run Vitest in watch mode:
 npm run test:watch
 ```
 
@@ -122,9 +125,16 @@ npm run test:watch
   - `A11Y-04`: Mobile navigation menu keyboard focus, ARIA expanded state, and Escape key dismissal with focus restoration.
 - **`tests/responsive.spec.ts` (20 tests)**:
   - Exhaustive 5-viewport verification matrix (`320×568`, `375×667`, `390×844`, `768×1024`, and `1440×900`).
+  - Official Playwright device emulation profiles (`iPhone SE`, `iPhone 8`, `iPhone 14`) with real `isMobile: true`, `hasTouch: true`, and high device pixel ratios (`deviceScaleFactor` 2 & 3).
   - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`).
-  - Full primary user flows (Homepage, Verification Lab, PR Analysis, and responsive navigation) on every viewport.
-  - Automatic screenshot evidence artifacts (15 PNGs across 5 viewports) saved to [`docs/screenshots/`](docs/screenshots/).
+  - Full primary user flows (Homepage, Verification Lab, PR Analysis, and responsive touch navigation) on every viewport.
+- **`tests/mobile-device-emulation.spec.ts` (5 tests)**:
+  - `MOB-01`: Server-rendered HTML Meta Viewport tag (`<meta name="viewport" content="width=device-width, initial-scale=1"/>`) verified on all production & preview routes (`/`, `/lab`, `/analyze`, `/about`).
+  - `MOB-02`: Official `iPhone 14` device profile (DPR: 3, 390x844) touch navigation, hamburger toggle, and zero overflow.
+  - `MOB-03`: Official `iPhone SE` device profile (DPR: 2, 320x568 compact) touch execution of PR Analysis workspace with zero horizontal overflow.
+  - `MOB-04`: Official `Pixel 7` Android mobile profile (DPR: 2.625, 412x839) touch execution of Verification Lab and test assertion clipboard copying.
+  - `MOB-05`: Official `iPad Mini` tablet touch profile (DPR: 2, 768x1024) hybrid navigation and responsive layout integrity.
+  - Photographic evidence artifacts (19 PNGs) saved to [`docs/screenshots/`](docs/screenshots/).
 
 ---
 
@@ -132,7 +142,7 @@ npm run test:watch
 
 - 📄 **[Hackathon Season 4 Submission & Audit Report](docs/HACKATHON-SEASON-4-SUBMISSION.md)**: Full architecture breakdown, test suite matrices, TestSprite 22 Passed / 0 Failed / 1 Blocked analysis, security audit, and step-by-step submission checklist.
 - 📄 **[TestSprite Merge Gate & Evidence Document](docs/TESTSPRITE-GATE-AND-EVIDENCE.md)**: Transparent technical details on the TestSprite remote runner mobile viewport limitation, CI automation logs, and merge gate decisions.
-- 📸 **[Photographic Viewport Evidence](docs/screenshots/)**: 15 full-page screenshot artifacts validating 0 horizontal overflow and responsive user flows on 5 screen sizes down to 320px width.
+- 📸 **[Photographic Viewport Evidence](docs/screenshots/)**: 19 full-page screenshot artifacts validating 0 horizontal overflow, real touch interactions, and responsive user flows on 5 screen sizes down to 320px width.
 
 ---
 
