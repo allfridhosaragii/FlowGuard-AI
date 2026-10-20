@@ -124,7 +124,15 @@ npm run test:watch
   - Exhaustive 5-viewport verification matrix (`320×568`, `375×667`, `390×844`, `768×1024`, and `1440×900`).
   - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`).
   - Full primary user flows (Homepage, Verification Lab, PR Analysis, and responsive navigation) on every viewport.
-  - Automatic screenshot evidence artifacts saved to `test-results/screenshots/`.
+  - Automatic screenshot evidence artifacts (15 PNGs across 5 viewports) saved to [`docs/screenshots/`](docs/screenshots/).
+
+---
+
+## 📑 Hackathon Documentation & Evidence Reports
+
+- 📄 **[Hackathon Season 4 Submission & Audit Report](docs/HACKATHON-SEASON-4-SUBMISSION.md)**: Full architecture breakdown, test suite matrices, TestSprite 22 Passed / 0 Failed / 1 Blocked analysis, security audit, and step-by-step submission checklist.
+- 📄 **[TestSprite Merge Gate & Evidence Document](docs/TESTSPRITE-GATE-AND-EVIDENCE.md)**: Transparent technical details on the TestSprite remote runner mobile viewport limitation, CI automation logs, and merge gate decisions.
+- 📸 **[Photographic Viewport Evidence](docs/screenshots/)**: 15 full-page screenshot artifacts validating 0 horizontal overflow and responsive user flows on 5 screen sizes down to 320px width.
 
 ---
 
@@ -157,7 +165,7 @@ npm run build
 - **No Arbitrary Execution**: External repository code is NEVER executed on the application server. The Verification Lab runs exclusively on allowlisted first-party synthetic fixtures.
 - **Evidence Precedes Verdicts**: AI findings for external PRs are strictly classified as `POTENTIAL`. Verdicts (`VERIFIED_PASS` or `VERIFIED_FAIL`) are reserved strictly for executed tests.
 - **Dynamic Provenance**: Verification evidence logs the live commit SHA (`git rev-parse HEAD`), fixture identity, and execution timestamps.
-- **Read-Only GitHub REST**: All PR inspections are strictly read-only with enforced diff size caps (100 KB max).
+- **Read-Only GitHub REST**: All PR inspections are strictly read-only with enforced diff size caps (200 KB max).
 
 ---
 
@@ -178,3 +186,4 @@ npm run build
 - GitHub: [@allfridhosaragii](https://github.com/allfridhosaragii)  
 - Email: pedoprimasaragi@gmail.com  
 - Event: **TestSprite Hackathon Season 4**
+- Branch & PR: `feat/testsprite-s4-hardening` (PR #1)

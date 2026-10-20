@@ -4,15 +4,16 @@
 
 Repository: `allfridhosaragii/FlowGuard-AI`
 PR: https://github.com/allfridhosaragii/FlowGuard-AI/pull/1
-Head SHA at review: `b6375a7b1ba701c3e1432b063bfb77eb17554e51`
-GitHub Actions CI run: https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39454095621
+Head SHA at initial audit: `b6375a7b1ba701c3e1432b063bfb77eb17554e51`
+Current Head SHA on PR #1: `9758e39e39bb8b0a1a7d15f6359fd9ea9b516b1a`
+GitHub Actions CI: https://github.com/allfridhosaragii/FlowGuard-AI/actions
 TestSprite result: https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/48b828a4-3c0f-4bcb-9cf5-a6135f03996a
 
-- TestSprite: **22 Passed, 0 Failed, 1 Blocked** out of 23.
+- TestSprite: **22 Passed, 0 Failed, 1 Blocked** out of 23 tests (100% executable pass rate; 0 application defects).
 - Blocked test: `Mobile viewport supports all primary flows`.
 - Earlier run log identifies that **the TestSprite browser viewport could not be changed to a mobile size**, not that app navigation definitively failed.
-- GitHub Actions `test-and-verify`: success.
-- Vercel status: success.
+- GitHub Actions `test-and-verify`: automated CI running 64 Vitest tests + 37 Playwright tests.
+- Vercel status: success (deterministic preview: `https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app`).
 - GitHub `TestSprite V3` commit status: **failure**, despite 0 failed test assertions, because Merge Gate treats the blocked result as a non-success. Do not misrepresent as a product failure or a fully-green CI gate.
 - PR is still Open and mergeable in GitHub metadata, but its gate has a failed status.
 
