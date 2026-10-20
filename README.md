@@ -86,10 +86,10 @@ npm run test:watch
   - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
 - **`tests/agents.test.ts` (9 tests)**:
   - Invariant extraction, risk hunting (stripping comments to avoid false-positive locks), benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, and 6-stage orchestrator pipeline.
-- **`tests/api-integration.test.ts` (10 tests)**:
-  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, and error handling.
-- **`tests/github.test.ts` (2 tests)**:
-  - Read-only GitHub REST URL parser and diff size limit enforcement (100 KB max).
+- **`tests/api-integration.test.ts` (12 tests)**:
+  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation (preventing fake `NO_RISK_FOUND`), and partial analysis metadata.
+- **`tests/github.test.ts` (22 tests)**:
+  - Strict URL validation, unified diff parser, per-file patch filtering, regression test proving skipped files are excluded from Risk Hunter input, oversized diff handling preserving patch boundaries, single-file line truncation, pagination (>100 and >300 files), incomplete pagination API error handling, rate limits (403), 404s, binary file omission, renamed files, and honest error on 0 readable code patches.
 - **`tests/e2e.spec.ts` (9 tests)**:
   - `E2E-01`: Landing page navigation and honest CTAs.
   - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.

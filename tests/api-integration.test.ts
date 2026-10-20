@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET as healthHandler } from '../src/app/api/v1/health/route';
 import { POST as labVerifyHandler } from '../src/app/api/v1/lab/verify/route';
 import { POST as analysesHandler } from '../src/app/api/v1/analyses/route';
+import { GitHubPRReader } from '../src/lib/github/pr-reader';
 
 describe('API Route Handlers Integration Suite', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('GET /api/v1/health', () => {
     it('returns 200 OK with accurate system metadata and without leaking secrets', async () => {
       const response = await healthHandler();
@@ -217,6 +222,73 @@ async function processRefund(idempotencyKey, amount) {
       const data = await response.json();
       expect(data.error.code).toBe('INVALID_INPUT');
       expect(data.error.message).toContain('Idempotency Key is required');
+    });
+
+    it('returns 422 GITHUB_FETCH_ERROR when GitHub PR fetch fails (prevents false NO_RISK_FOUND)', async () => {
+      vi.spyOn(GitHubPRReader, 'fetchPR').mockRejectedValueOnce(
+        new Error('GitHub PR contains no readable code patches or diff evidence for analysis.')
+      );
+
+      const req = new NextRequest('http://localhost:3000/api/v1/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessRule:
+            'A settled payment can create at most one refund side effect for a given idempotency key.',
+          githubPrUrl: 'https://github.com/owner/repo/pull/1',
+        }),
+      });
+
+      const response = await analysesHandler(req);
+      expect(response.status).toBe(422);
+
+      const data = await response.json();
+      expect(data.error.code).toBe('GITHUB_FETCH_ERROR');
+      expect(data.error.message).toContain('no readable code patches');
+      // Proves no fake NO_RISK_FOUND verdict is emitted
+      expect(data.verdict).toBeUndefined();
+    });
+
+    it('returns 200 with partial analysis badge metadata when PR is large', async () => {
+      vi.spyOn(GitHubPRReader, 'fetchPR').mockResolvedValueOnce({
+        owner: 'owner',
+        repo: 'repo',
+        pullNumber: 1,
+        title: 'Large PR',
+        description: 'Large feature PR',
+        headSha: 'def456',
+        baseBranch: 'main',
+        changedFiles: ['src/service.ts'],
+        diff: 'diff --git a/src/service.ts b/src/service.ts\n--- a/src/service.ts\n+++ b/src/service.ts\n@@ -1 +1 @@\n-a\n+b\n',
+        coverage: {
+          totalFiles: 45,
+          analyzedFiles: 30,
+          selectedFiles: 30,
+          filesWithPatch: 30,
+          skippedFiles: 15,
+          isPartialAnalysis: true,
+          selectionStrategy: 'partial:top-30-by-relevance',
+          incompleteReason: 'pr_file_count_exceeds_analysis_limit',
+        },
+      });
+
+      const req = new NextRequest('http://localhost:3000/api/v1/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessRule:
+            'A settled payment can create at most one refund side effect for a given idempotency key.',
+          githubPrUrl: 'https://github.com/owner/repo/pull/1',
+        }),
+      });
+
+      const response = await analysesHandler(req);
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      expect(data.runId).toBeTruthy();
+      expect(data.notes.some((n: string) => n.startsWith('Partial Analysis:'))).toBe(true);
+      expect(data.notes.some((n: string) => n.includes('45 changed files'))).toBe(true);
     });
   });
 });

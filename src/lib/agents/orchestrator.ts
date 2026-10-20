@@ -35,6 +35,9 @@ export class AgentOrchestrator {
     if (input.businessRule.length > 2000) {
       throw new Error('Business rule exceeds maximum length of 2,000 characters');
     }
+    if (!input.codeDiff || input.codeDiff.trim().length === 0) {
+      throw new Error('Analysis requires non-empty code diff or snippet evidence');
+    }
     stages.push({
       stage: 'VALIDATING_INPUT',
       status: 'SUCCESS',
@@ -114,12 +117,18 @@ export class AgentOrchestrator {
     // Partial analysis coverage note
     if (input.prCoverage?.isPartialAnalysis) {
       const c = input.prCoverage;
-      notes.push(
+      let note =
         `Partial Analysis: This PR contains ${c.totalFiles} changed files. ` +
         `FlowGuard analysed the ${c.analyzedFiles} most relevant source files and skipped ${c.skippedFiles} ` +
         `non-code or lower-priority files. ` +
-        `Selection strategy: ${c.selectionStrategy}.`
-      );
+        `Selection strategy: ${c.selectionStrategy}.`;
+      if (typeof c.filesWithPatch === 'number') {
+        note += ` Verified patches: ${c.filesWithPatch}/${c.analyzedFiles} files.`;
+      }
+      if (c.incompleteReason) {
+        note += ` Limitation reason: ${c.incompleteReason}.`;
+      }
+      notes.push(note);
     }
 
     notes.push(

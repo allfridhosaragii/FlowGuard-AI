@@ -57,6 +57,18 @@ export async function POST(req: NextRequest) {
       sourceReference = githubPrUrl;
       try {
         const pr = await GitHubPRReader.fetchPR(githubPrUrl);
+        if (!pr.diff || pr.diff.trim().length === 0 || pr.coverage.filesWithPatch === 0) {
+          return NextResponse.json(
+            {
+              error: {
+                code: 'GITHUB_FETCH_ERROR',
+                message:
+                  'GitHub PR contains no readable code patches or diff evidence for analysis. Cannot issue verdict without code evidence.',
+              },
+            },
+            { status: 422 }
+          );
+        }
         diff = pr.diff;
         files = pr.changedFiles;
         sourceSha = pr.headSha;
