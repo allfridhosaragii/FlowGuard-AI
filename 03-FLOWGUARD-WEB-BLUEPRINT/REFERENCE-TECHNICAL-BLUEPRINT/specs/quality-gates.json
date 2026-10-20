@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "product": "FlowGuard AI",
+  "status": "SPECIFICATION_ONLY_NOT_IMPLEMENTATION",
+  "design_areas": [
+    "problem_and_market", "user_scope_and_requirements", "ui_ux_accessibility", "architecture", "agent_contracts", "verification_lab", "external_github_testsprite", "test_strategy", "security_privacy", "operations_costs", "sprint_plan", "demo_submission", "coding_handoff", "risk_decision_register", "current_state_audit", "status_claims", "api_contracts", "database_contracts", "post_hackathon_validation"
+  ],
+  "build_gates": {
+    "G1_core_lab": ["lab_vulnerable_fails", "lab_fixed_passes", "evidence_target_bound", "no_fake_metrics"],
+    "G2_ai_review": ["real_server_model_calls", "agent_zod_validation", "github_public_pr_read_only", "status_potential_external_pr", "safe_failure_modes"],
+    "G3_release": ["tests_green", "vercel_pr_preview_live", "testsprite_real_pr_comment_or_check", "readme_true", "discord_submission_complete"]
+  },
+  "release_policy": "Any failed blocking gate means NOT_SUBMISSION_READY. Do not invent passing evidence."
+}

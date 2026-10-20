@@ -1,0 +1,234 @@
+openapi: 3.1.0
+info:
+  title: FlowGuard AI MVP API
+  version: 1.0.0
+  description: |
+    Contract specification, not a currently deployed API. MVP executes only trusted
+    first-party fixtures. Public GitHub PR reviews yield POTENTIAL findings only.
+servers:
+  - url: https://flowguard-ai-smoky.vercel.app
+paths:
+  /api/v1/health:
+    get:
+      operationId: getHealth
+      summary: Return minimal service readiness without secrets
+      responses:
+        '200':
+          description: Healthy server with optional subsystem configuration signals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version, ai_configured, persistence_configured]
+                properties:
+                  status: {type: string, const: ok}
+                  version: {type: string}
+                  ai_configured: {type: boolean}
+                  persistence_configured: {type: boolean}
+  /api/v1/lab/verify:
+    post:
+      operationId: verifyFixture
+      summary: Execute a bounded and trusted synthetic refund invariant test
+      description: Does not execute GitHub PR code or move real money.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabVerifyRequest'
+      responses:
+        '200':
+          description: Verification completed (semantic fail/success in outcome)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LabVerifyResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+        '500': {$ref: '#/components/responses/ServerError'}
+  /api/v1/analyses:
+    post:
+      operationId: analyzePR
+      summary: Read a public GitHub PR and generate agent-supported potential findings
+      description: |
+        Reads capped public PR diff and business rule; all findings are POTENTIAL,
+        even if an analogous local fixture proves a similar behavior. Never executes
+        external PR code. Synchronous bounded response; optional persistence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AnalyzeRequest'}
+      responses:
+        '200':
+          description: Structured PR risk review; no verified verdict for external code
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnalyzeResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '422':
+          description: Valid URL but beyond supported review scope
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+        '503':
+          description: Model/GitHub unavailable or not configured
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+components:
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    PayloadTooLarge:
+      description: Request exceeds permitted size
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    TooManyRequests:
+      description: User has exceeded per-IP or global quota
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    ServerError:
+      description: Operation failed; never implies a verified PASS
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+  schemas:
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error, request_id]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [INVALID_INPUT, PAYLOAD_TOO_LARGE, RATE_LIMITED, UNSUPPORTED_SCOPE, GITHUB_UNAVAILABLE, PROVIDER_UNAVAILABLE, AI_NOT_CONFIGURED, MODEL_TIMEOUT, SCHEMA_INVALID, RUNNER_ERROR, INTERNAL_ERROR]
+            message: {type: string, maxLength: 500}
+        request_id: {type: string, format: uuid}
+    LabVerifyRequest:
+      type: object
+      additionalProperties: false
+      required: [fixture_id, payment_id, idempotency_key, parallel_requests, iterations]
+      properties:
+        fixture_id:
+          type: string
+          enum: [refund.vulnerable.v1, refund.fixed.v1]
+        payment_id: {type: string, minLength: 1, maxLength: 80}
+        idempotency_key: {type: string, minLength: 1, maxLength: 80}
+        parallel_requests: {type: integer, minimum: 1, maximum: 5}
+        iterations: {type: integer, minimum: 1, maximum: 20}
+        payload_mode: {type: string, enum: [same_amount, conflicting_amounts], default: same_amount}
+        amount_minor_units: {type: integer, minimum: 1, maximum: 1000000, default: 1200}
+    LabVerifyResponse:
+      type: object
+      additionalProperties: false
+      required: [run_id, target_kind, target_id, target_revision, rule_id, test_template_id, started_at, finished_at, outcome, iterations, observed_effects, evidence_sha256]
+      properties:
+        run_id: {type: string, format: uuid}
+        target_kind: {type: string, const: FIRST_PARTY_FIXTURE}
+        target_id: {type: string, enum: [refund.vulnerable.v1, refund.fixed.v1]}
+        target_revision: {type: string, minLength: 7}
+        rule_id: {type: string, const: INV-REFUND-001}
+        test_template_id: {type: string, const: REFUND_DUPLICATE_REQUEST_V1}
+        started_at: {type: string, format: date-time}
+        finished_at: {type: string, format: date-time}
+        outcome: {type: string, enum: [VERIFIED_PASS, VERIFIED_FAIL, INCONCLUSIVE]}
+        iterations: {type: integer, minimum: 1, maximum: 20}
+        observed_effects:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [iteration, ledger_entries, attempt_count]
+            properties:
+              iteration: {type: integer, minimum: 1}
+              ledger_entries: {type: integer, minimum: 0}
+              attempt_count: {type: integer, minimum: 1, maximum: 5}
+        evidence_sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+    AnalyzeRequest:
+      type: object
+      additionalProperties: false
+      required: [public_pr_url, business_rule]
+      properties:
+        public_pr_url: {type: string, minLength: 30, maxLength: 500, description: 'https://github.com/{owner}/{repo}/pull/{number} only'}
+        business_rule: {type: string, minLength: 10, maxLength: 2000}
+    AnalyzeResponse:
+      type: object
+      additionalProperties: false
+      required: [analysis_id, source, status, stages, invariants, findings, verification_plans, persistence]
+      properties:
+        analysis_id: {type: string, format: uuid}
+        source:
+          type: object
+          additionalProperties: false
+          required: [repo, pr_number, commit_sha, pr_url]
+          properties:
+            repo: {type: string}
+            pr_number: {type: integer, minimum: 1}
+            commit_sha: {type: string, pattern: '^[a-f0-9]{40}$'}
+            pr_url: {type: string, format: uri}
+        status: {type: string, const: COMPLETED}
+        stages:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, status]
+            properties:
+              name: {type: string, enum: [REQUIREMENT_ANALYST, RISK_HUNTER, VERIFICATION_PLANNER]}
+              status: {type: string, enum: [COMPLETED, SKIPPED]}
+        invariants:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [id, description]
+            properties:
+              id: {type: string}
+              description: {type: string}
+        findings:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, invariant_id, title, reasoning, severity, status]
+            properties:
+              id: {type: string}
+              invariant_id: {type: string}
+              title: {type: string}
+              reasoning: {type: string}
+              severity: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}
+              status: {type: string, const: POTENTIAL}
+              source_ref:
+                type: [object, 'null']
+                properties:
+                  path: {type: string}
+                  line_start: {type: integer, minimum: 1}
+                  line_end: {type: integer, minimum: 1}
+        verification_plans:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            required: [finding_id, test_template_id, verification_scope]
+            properties:
+              finding_id: {type: string}
+              test_template_id: {type: string, enum: [REFUND_DUPLICATE_REQUEST_V1, NOT_SUPPORTED]}
+              verification_scope: {type: string, enum: [FIRST_PARTY_FIXTURE_ONLY, UNEXECUTED_EXTERNAL_PR]}
+        persistence: {type: string, enum: [NOT_SAVED, SAVED]}
