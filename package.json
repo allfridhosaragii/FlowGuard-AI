@@ -1,0 +1,21 @@
+{
+  "name": "flowguard-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Autonomous AI-Powered Risk Detection & Bug Hunting Engine",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y serve .",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "ai",
+    "risk-detection",
+    "bug-hunting",
+    "testsprite",
+    "cybersecurity",
+    "telemetry"
+  ],
+  "author": "Allfridho Saragi <pedoprimasaragi@gmail.com>",
+  "license": "MIT"
+}
