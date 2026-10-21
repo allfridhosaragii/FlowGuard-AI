@@ -74,6 +74,21 @@ function validLineRefs(refs: unknown[], allowed: Set<number>): refs is string[] 
   });
 }
 
+function assignUniqueFindingIds(findings: RiskFinding[]): RiskFinding[] {
+  const usedIds = new Set<string>();
+
+  return findings.map((finding, index) => {
+    const baseId = finding.id.trim() || `RISK-${String(index + 1).padStart(3, '0')}`;
+    let id = baseId;
+    let duplicateNumber = 2;
+    while (usedIds.has(id)) {
+      id = `${baseId}-${duplicateNumber++}`;
+    }
+    usedIds.add(id);
+    return { ...finding, id };
+  });
+}
+
 export class RiskHunterAgent {
   public static async analyze(
     invariants: BusinessInvariant[], codeDiff: string, filePaths: string[]
@@ -127,7 +142,7 @@ CRITICAL RULES:
           return { findings: this.heuristicScan(invariants, evidence), isRealModel: false,
             modelName: 'deterministic-heuristic-v1 (model findings lacked active evidence)' };
         }
-        return { findings, isRealModel: true, modelName: response.modelName };
+        return { findings: assignUniqueFindingIds(findings), isRealModel: true, modelName: response.modelName };
       } catch {
         return { findings: this.heuristicScan(invariants, evidence), isRealModel: false,
           modelName: 'deterministic-heuristic-v1 (invalid model output)' };
@@ -159,6 +174,6 @@ CRITICAL RULES:
         counterexample: 'An unauthenticated caller provides an unsigned JWT with administrative claims, bypassing authorization checks.', status: 'POTENTIAL',
       });
     }
-    return findings;
+    return assignUniqueFindingIds(findings);
   }
 }

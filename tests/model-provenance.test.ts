@@ -8,6 +8,7 @@ import { AIProvider } from '../src/lib/ai/provider';
 import { RequirementAgent } from '../src/lib/agents/requirement-agent';
 import { RiskHunterAgent } from '../src/lib/agents/risk-agent';
 import { AgentOrchestrator } from '../src/lib/agents/orchestrator';
+import { VerificationPlannerAgent } from '../src/lib/agents/verification-agent';
 
 const rule = 'A payment refund must be idempotent: one idempotency key produces at most one side effect.';
 const vulnerable = `
@@ -144,6 +145,66 @@ diff --git a/src/refund.ts b/src/refund.ts
     const result = await RiskHunterAgent.analyze(inv, patch, ['src/clean.ts', 'src/refund.ts']);
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0].sourcePaths).toEqual(['src/refund.ts']);
+  });
+
+  it('assigns unique deterministic IDs to duplicate concurrency findings and keeps planner references aligned', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(false);
+    const patch = `diff --git a/src/refund-a.ts b/src/refund-a.ts
+--- a/src/refund-a.ts
++++ b/src/refund-a.ts
+@@ -0,0 +1,3 @@
++const prior = await db.refunds.findOne({ key });
++await sleep(20);
++if (!prior) await db.refunds.create({ key });
+diff --git a/src/refund-b.ts b/src/refund-b.ts
+--- a/src/refund-b.ts
++++ b/src/refund-b.ts
+@@ -0,0 +1,3 @@
++const prior = await db.refunds.findOne({ key });
++await sleep(20);
++if (!prior) await db.refunds.create({ key });`;
+    const inv = [RequirementAgent.fallbackInvariant(rule)];
+    const findings = (await RiskHunterAgent.analyze(inv, patch, [])).findings;
+    expect(findings.map((finding) => finding.id)).toEqual(['RISK-001', 'RISK-001-2']);
+    expect(new Set(findings.map((finding) => finding.id)).size).toBe(findings.length);
+    const plans = await VerificationPlannerAgent.plan(inv, findings);
+    expect(plans.plans.map((plan) => plan.findingId)).toEqual(['RISK-001', 'RISK-001-2']);
+  });
+
+  it('assigns unique IDs to duplicate React key risks returned by the model', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(true);
+    vi.spyOn(AIProvider, 'generateJSON').mockResolvedValue({
+      content: JSON.stringify({ findings: [
+        {
+          id: 'RISK-REACT-KEY', ruleId: 'INV-UI-001', severity: 'MEDIUM',
+          sourcePaths: ['src/ListA.tsx'], sourceLineRefs: ['L10'],
+          why: 'A list item uses an unstable array index as its React key.',
+          counterexample: 'Reordering the list preserves stale component state.', status: 'POTENTIAL',
+        },
+        {
+          id: 'RISK-REACT-KEY', ruleId: 'INV-UI-001', severity: 'MEDIUM',
+          sourcePaths: ['src/ListB.tsx'], sourceLineRefs: ['L20'],
+          why: 'A second list uses an unstable array index as its React key.',
+          counterexample: 'Filtering the list preserves stale component state.', status: 'POTENTIAL',
+        },
+      ] }),
+      isRealModel: true,
+      modelName: 'test/neural',
+    });
+    const patch = `diff --git a/src/ListA.tsx b/src/ListA.tsx
+--- a/src/ListA.tsx
++++ b/src/ListA.tsx
+@@ -0,0 +10 @@
++items.map((item, index) => <Row key={index} item={item} />)
+diff --git a/src/ListB.tsx b/src/ListB.tsx
+--- a/src/ListB.tsx
++++ b/src/ListB.tsx
+@@ -0,0 +20 @@
++items.map((item, index) => <Row key={index} item={item} />)`;
+    const inv = [RequirementAgent.fallbackInvariant('List items require stable keys to preserve component identity.')];
+    const findings = (await RiskHunterAgent.analyze(inv, patch, [])).findings;
+    expect(findings.map((finding) => finding.id)).toEqual(['RISK-REACT-KEY', 'RISK-REACT-KEY-2']);
+    expect(new Set(findings.map((finding) => finding.id)).size).toBe(findings.length);
   });
 
   it('does not invent source line numbers for a manual snippet', async () => {
