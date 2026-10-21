@@ -104,12 +104,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 200 });
-  } catch (error) {
+  } catch {
+    // Never expose internal exceptions or upstream provider messages to public callers.
     return NextResponse.json(
       {
         error: {
           code: 'ORCHESTRATION_ERROR',
-          message: error instanceof Error ? error.message : 'Analysis pipeline encountered an unexpected error',
+          message: 'Analysis pipeline encountered an unexpected error',
         },
       },
       { status: 500 }
