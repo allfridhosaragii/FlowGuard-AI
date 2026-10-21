@@ -1,0 +1,62 @@
+name: Live Production Smoke Audit (isolated)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/live-production-smoke.yml'
+      - 'scripts/live-production-smoke.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  live-production-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PRODUCTION_URL: https://flowguard-ai-smoky.vercel.app
+      PLAYWRIGHT_BASE_URL: https://flowguard-ai-smoky.vercel.app
+    steps:
+      - name: Checkout isolated audit code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium or fail-closed system-browser fallback
+        shell: bash
+        run: |
+          if npx playwright install --with-deps chromium; then
+            exit 0
+          fi
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -z "$browser_path" ]; then
+            echo "No Playwright or system Chromium available; audit cannot be skipped." >&2
+            exit 1
+          fi
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$browser_path" >> "$GITHUB_ENV"
+          echo "Playwright browser install unavailable; using system Chromium."
+
+      - name: Probe real production APIs, public bundles, desktop and mobile UI
+        run: node scripts/live-production-smoke.mjs
+
+      - name: Run existing 43 Playwright cases against real production (not localhost)
+        run: npx playwright test --config=playwright.audit.config.ts
+
+      - name: Upload audit evidence and browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-production-smoke-evidence
+          path: |
+            smoke-artifacts/
+            test-results/
+            playwright-report/
+          retention-days: 7
