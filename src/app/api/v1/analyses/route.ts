@@ -6,9 +6,9 @@ import { GitHubPRReader, PRCoverageMetadata } from '@/lib/github/pr-reader';
 const AnalysisRequestSchema = z
   .object({
     businessRule: z.string().trim().min(10, 'Business rule must be at least 10 characters').max(2000),
-    githubPrUrl: z.string().trim().url('Invalid GitHub PR URL format').optional().or(z.literal('')),
+    githubPrUrl: z.string().trim().url('Invalid GitHub PR URL format').max(2048).optional().or(z.literal('')),
     codeSnippet: z.string().trim().max(30000).optional().or(z.literal('')),
-    filePaths: z.array(z.string()).optional(),
+    filePaths: z.array(z.string().trim().min(1).max(512)).max(30).optional(),
   })
   .refine(
     (data) => {
