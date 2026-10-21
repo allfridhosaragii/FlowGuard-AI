@@ -151,7 +151,50 @@ diff --git a/src/refund.ts b/src/refund.ts
     const inv = [RequirementAgent.fallbackInvariant(rule)];
     const result = await RiskHunterAgent.analyze(inv, vulnerable, ['src/refund.ts']);
     expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].sourcePaths).toEqual([]);
     expect(result.findings[0].sourceLineRefs).toEqual([]);
+  });
+
+  it('uses the diff header path for a single-file patch when supplied paths disagree', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(false);
+    const patch = `diff --git a/src/actual-refund.ts b/src/actual-refund.ts
+--- a/src/actual-refund.ts
++++ b/src/actual-refund.ts
+@@ -10,0 +50,3 @@
++const prior = await db.refunds.findOne({ key });
++await sleep(20);
++if (!prior) await db.refunds.create({ key });`;
+    const inv = [RequirementAgent.fallbackInvariant(rule)];
+    const result = await RiskHunterAgent.analyze(inv, patch, ['src/wrong.ts']);
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].sourcePaths).toEqual(['src/actual-refund.ts']);
+  });
+
+  it('uses the diff header path for a single-file patch when supplied paths are empty', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(false);
+    const patch = `diff --git a/src/auth.ts b/src/auth.ts
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -0,0 +12,2 @@
++if (decoded.header.alg === 'none') return decoded.payload;
++return decoded;`;
+    const inv = [RequirementAgent.fallbackInvariant('Token signatures must always be verified.')];
+    const result = await RiskHunterAgent.analyze(inv, patch, []);
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].sourcePaths).toEqual(['src/auth.ts']);
+  });
+
+  it('handles a single-file diff without recursive dispatch', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(false);
+    const patch = `diff --git a/src/auth.ts b/src/auth.ts
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -0,0 +1 @@
++if (alg === 'none') return claims;`;
+    const inv = [RequirementAgent.fallbackInvariant('Token signatures must always be verified.')];
+    await expect(RiskHunterAgent.analyze(inv, patch, [])).resolves.toMatchObject({
+      findings: [{ sourcePaths: ['src/auth.ts'] }],
+    });
   });
 
   it('cites the actual new-file hunk range for a diff finding', async () => {
@@ -167,6 +210,80 @@ diff --git a/src/refund.ts b/src/refund.ts
     const result = await RiskHunterAgent.analyze(inv, patch, ['src/refund.ts']);
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0].sourceLineRefs).toEqual(['L207-L209']);
+  });
+
+  it('cites only the matching hunk when a file contains unrelated hunks', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(false);
+    const patch = `diff --git a/src/auth.ts b/src/auth.ts
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -10,2 +10,2 @@
+-const label = 'old';
++const label = 'new';
+ return label;
+@@ -80,2 +80,2 @@
+-const timeout = 10;
++const timeout = 20;
+ export { timeout };
+@@ -200,2 +200,3 @@
++if (decoded.header.alg === 'none') return decoded.payload;
++const claims = decoded.payload;
++return claims;`;
+    const inv = [RequirementAgent.fallbackInvariant('Token signatures must always be verified.')];
+    const result = await RiskHunterAgent.analyze(inv, patch, ['src/auth.ts']);
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].sourceLineRefs).toEqual(['L200-L202']);
+  });
+
+  it('sends the model only structured active new-side evidence', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(true);
+    const generate = vi.spyOn(AIProvider, 'generateJSON').mockResolvedValue({
+      content: '{"findings":[]}', isRealModel: true, modelName: 'test/neural',
+    });
+    const patch = `diff --git a/src/auth.ts b/src/auth.ts
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -90,2 +10,2 @@
+-const REMOVED_SECRET_BYPASS = verify === false;
+-return trustUnsignedToken(token);
++const verified = jwt.verify(token, secret);
+ return verified;`;
+    const inv = [RequirementAgent.fallbackInvariant('Token signatures must always be verified.')];
+    await RiskHunterAgent.analyze(inv, patch, ['src/auth.ts']);
+    const [systemPrompt, userPrompt] = generate.mock.calls[0];
+    expect(systemPrompt).toMatch(/active new-side evidence/i);
+    expect(userPrompt).not.toContain('REMOVED_SECRET_BYPASS');
+    expect(userPrompt).not.toContain('trustUnsignedToken');
+    expect(userPrompt).not.toContain('diff --git');
+    expect(userPrompt).toContain('"kind": "added"');
+    expect(userPrompt).toContain('"lineNumber": 10');
+    expect(userPrompt).toContain('jwt.verify');
+  });
+
+  it('rejects model provenance that cites a deleted line', async () => {
+    vi.spyOn(AIProvider, 'isConfigured').mockReturnValue(true);
+    vi.spyOn(AIProvider, 'generateJSON').mockResolvedValue({
+      content: JSON.stringify({ findings: [{
+        id: 'RISK-001', ruleId: 'INV-001', severity: 'HIGH',
+        sourcePaths: ['src/auth.ts'], sourceLineRefs: ['L90'],
+        why: 'The removed bypass trusts unsigned tokens.',
+        counterexample: 'An unsigned token is accepted.', status: 'POTENTIAL',
+      }] }),
+      isRealModel: true,
+      modelName: 'test/neural',
+    });
+    const patch = `diff --git a/src/auth.ts b/src/auth.ts
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -90,2 +10,1 @@
+-if (alg === 'none') return claims;
+-return trustUnsignedToken(token);
++return jwt.verify(token, secret);`;
+    const inv = [RequirementAgent.fallbackInvariant('Token signatures must always be verified.')];
+    const result = await RiskHunterAgent.analyze(inv, patch, ['src/auth.ts']);
+    expect(result.findings).toEqual([]);
+    expect(result.isRealModel).toBe(false);
+    expect(result.modelName).toMatch(/active evidence/i);
   });
 
   it('the pipeline exposes heuristic provenance on malformed neural responses', async () => {
