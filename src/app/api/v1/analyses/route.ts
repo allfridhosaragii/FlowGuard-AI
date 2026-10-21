@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AgentOrchestrator } from '@/lib/agents/orchestrator';
+import { AgentOrchestrator, AnalysisInput } from '@/lib/agents/orchestrator';
 import { GitHubPRReader, PRCoverageMetadata } from '@/lib/github/pr-reader';
 
 const AnalysisRequestSchema = z
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     let diff = codeSnippet || '';
     let files = filePaths || [];
-    let prContext: any = undefined;
+    let prContext: AnalysisInput['prContext'];
     let prCoverage: PRCoverageMetadata | undefined = undefined;
     let sourceSha = 'manual:input';
     let sourceReference = 'Manual Code Input';
@@ -79,12 +79,12 @@ export async function POST(req: NextRequest) {
           files: pr.changedFiles,
           coverage: pr.coverage,
         };
-      } catch (err: any) {
+      } catch (err) {
         return NextResponse.json(
           {
             error: {
               code: 'GITHUB_FETCH_ERROR',
-              message: err.message || 'Failed to read public GitHub pull request',
+              message: err instanceof Error ? err.message : 'Failed to read public GitHub pull request',
             },
           },
           { status: 422 }
@@ -104,12 +104,12 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         error: {
           code: 'ORCHESTRATION_ERROR',
-          message: error.message || 'Analysis pipeline encountered an unexpected error',
+          message: error instanceof Error ? error.message : 'Analysis pipeline encountered an unexpected error',
         },
       },
       { status: 500 }

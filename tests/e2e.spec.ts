@@ -383,4 +383,29 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     // Verify Payment race findings are NOT displayed
     await expect(page.locator('text=RISK-001')).not.toBeVisible();
   });
+
+  test('clearing code invalidates an analysis still in flight', async ({ page }) => {
+    let routeHandled!: () => void;
+    const handled = new Promise<void>((resolve) => { routeHandled = resolve; });
+    await page.route('**/api/v1/analyses', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      try {
+        await route.continue();
+      } catch {
+        // The browser may cancel this intercepted request after code is cleared.
+      } finally {
+        routeHandled();
+      }
+    });
+    await page.goto('/analyze');
+    await page.locator('#btn-preset-payment').click();
+    const request = page.waitForRequest('**/api/v1/analyses');
+    await page.locator('#btn-launch-analysis').click();
+    await request;
+    await page.locator('#btn-clear-code').click();
+    await expect(page.locator('#code-snippet-input')).toHaveValue('');
+    await handled;
+    await expect(page.locator('#btn-launch-analysis')).toBeEnabled();
+    await expect(page.getByText('Formal Invariants Extracted (Agent A)')).not.toBeVisible();
+  });
 });

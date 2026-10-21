@@ -68,6 +68,7 @@ export interface GitHubPRMetadata {
 export interface GitHubPRFileInfo {
   filename: string;
   status?: string;
+  previous_filename?: string;
   previousFilename?: string;
   patch?: string;
   additions?: number;
@@ -286,7 +287,7 @@ export class GitHubPRReader {
         break;
       }
 
-      const data: any[] = await res.json();
+      const data = (await res.json()) as GitHubPRFileInfo[];
       if (!Array.isArray(data) || data.length === 0) break;
 
       for (const f of data) {

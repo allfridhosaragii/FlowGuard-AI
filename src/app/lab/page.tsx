@@ -67,8 +67,8 @@ export default function VerificationLabPage() {
 
       const data: VerificationEvidence = await res.json();
       setEvidence(data);
-    } catch (err: any) {
-      setError(err.message || 'Unexpected failure while running verification');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected failure while running verification');
       setEvidence(null);
     } finally {
       setLoading(false);
@@ -308,7 +308,7 @@ export default function VerificationLabPage() {
                 name="payloadMode"
                 aria-label="Payload Mode"
                 value={payloadMode}
-                onChange={(e: any) => setPayloadMode(e.target.value)}
+                onChange={(e) => setPayloadMode(e.target.value as 'same_amount' | 'differing_amount')}
                 className="w-full px-2.5 py-2 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-accent focus:border-accent"
               >
                 <option value="same_amount">Identical Amount</option>

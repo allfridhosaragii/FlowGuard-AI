@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
 
     const evidence = await VerificationRunner.execute(validated.data);
     return NextResponse.json(evidence, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         error: {
           code: 'RUNNER_ERROR',
-          message: error.message || 'Verification harness encountered an internal failure',
+          message: error instanceof Error ? error.message : 'Verification harness encountered an internal failure',
         },
       },
       { status: 500 }

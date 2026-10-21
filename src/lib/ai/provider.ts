@@ -123,9 +123,9 @@ export class AIProvider {
           totalTokens: data.usageMetadata?.totalTokenCount || 0,
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         throw new Error('Gemini API request timed out after 20s');
       }
       throw err;
@@ -182,9 +182,9 @@ export class AIProvider {
           totalTokens: data.usage?.total_tokens || 0,
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         throw new Error('LLM provider request timed out after 20s');
       }
       throw err;
