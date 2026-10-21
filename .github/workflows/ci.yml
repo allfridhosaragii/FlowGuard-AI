@@ -35,10 +35,22 @@ jobs:
         run: npm test
 
       - name: Install Playwright browser dependencies
-        run: npx playwright install --with-deps chromium
+        run: |
+          if npx playwright install --with-deps chromium; then
+            exit 0
+          fi
+
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -z "$browser_path" ]; then
+            echo "Playwright Chromium installation failed and no system browser is available." >&2
+            exit 1
+          fi
+
+          echo "Playwright Chromium installation failed; using system browser at $browser_path."
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$browser_path" >> "$GITHUB_ENV"
 
       - name: Run Playwright E2E, Accessibility, Responsive & Mobile Emulation suite
-        run: npx playwright test
+        run: npx playwright test --config=playwright.audit.config.ts
 
       - name: Upload Playwright Test Artifacts, Traces & Screenshots
         if: always()
