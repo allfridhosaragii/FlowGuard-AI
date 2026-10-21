@@ -33,6 +33,20 @@ export class FixedRefundService {
   public async processRefund(request: RefundRequest): Promise<RefundResult> {
     const { paymentId, idempotencyKey, amountMinor } = request;
 
+    // The domain layer must reject invalid values even when called outside an HTTP route.
+    // Prevent zero-value commits, negative refunds, fractional minor units and NaN corruption.
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Refund amount must be a positive safe integer in minor units',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+
     // STEP 1: Check committed ledger for existing result
     const existing = this.ledger.get(idempotencyKey);
     if (existing) {
