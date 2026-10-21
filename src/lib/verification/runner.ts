@@ -28,8 +28,11 @@ export class VerificationRunner {
     if (input.concurrency < 1 || input.concurrency > 5) {
       throw new Error('Concurrency must be between 1 and 5 concurrent asynchronous requests');
     }
-    if (input.amountMinor < 1 || input.amountMinor > 1000000) {
-      throw new Error('Amount must be between 1 and 1,000,000 minor units');
+    if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor < 1 || input.amountMinor > 1000000) {
+      throw new Error('Amount must be a safe integer between 1 and 1,000,000 minor units');
+    }
+    if (input.iterations !== undefined && input.iterations !== 1) {
+      throw new Error('Multi-iteration execution is not supported; send iterations: 1 or omit it');
     }
 
     const service =
