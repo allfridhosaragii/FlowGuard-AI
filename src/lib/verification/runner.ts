@@ -14,19 +14,19 @@ export class VerificationRunner {
     'A settled payment can create at most one refund side effect for a given idempotency key, even under concurrent retries.';
 
   /**
-   * Run the controlled verification test harness with real concurrent executions.
+   * Run the controlled verification test harness with real concurrent asynchronous executions.
    */
   public static async execute(input: VerificationInputVector): Promise<VerificationEvidence> {
     const startTime = Date.now();
     const runId = `run_lab_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const timeline: VerificationTimelineEvent[] = [];
 
-    // 1. Bound checks
+    // 1. Strict bound checks
     if (!input.idempotencyKey || input.idempotencyKey.trim().length === 0) {
-      throw new Error('Idempotency key is required');
+      throw new Error('Idempotency Key is required');
     }
     if (input.concurrency < 1 || input.concurrency > 5) {
-      throw new Error('Concurrency must be between 1 and 5');
+      throw new Error('Concurrency must be between 1 and 5 concurrent asynchronous requests');
     }
     if (input.amountMinor < 1 || input.amountMinor > 1000000) {
       throw new Error('Amount must be between 1 and 1,000,000 minor units');
@@ -39,14 +39,20 @@ export class VerificationRunner {
 
     const targetId =
       input.fixture === 'vulnerable' ? 'refund-vulnerable-v1' : 'refund-fixed-v1';
-    const targetVersion = 'git:7ae716e#fixture';
 
-    // 2. Prepare parallel tasks
+    // Dynamic commit SHA & version provenance (no hardcoded legacy SHA)
+    const commitSha =
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env.GIT_COMMIT_SHA ||
+      'pkg:v1.0.0';
+    const targetVersion = `${targetId}@${commitSha.substring(0, 7)}`;
+
+    // 2. Prepare parallel concurrent asynchronous tasks
     const tasks: Promise<RefundResult>[] = [];
     const payloadMode = input.payloadMode || 'same_amount';
 
     for (let i = 0; i < input.concurrency; i++) {
-      const threadId = `Worker_${i + 1}`;
+      const requestId = `Request_Async_${i + 1}`;
       const amount =
         payloadMode === 'differing_amount' && i > 0
           ? input.amountMinor + 1000 * i
@@ -61,8 +67,8 @@ export class VerificationRunner {
 
       timeline.push({
         step: timeline.length + 1,
-        threadId,
-        action: `Dispatched refund request (amount: ${amount})`,
+        threadId: requestId,
+        action: `Dispatched concurrent asynchronous request (amount: ${amount})`,
         timestampOffsetMs: Date.now() - startTime,
       });
 
@@ -70,7 +76,7 @@ export class VerificationRunner {
         service.processRefund(req).then((res) => {
           timeline.push({
             step: timeline.length + 1,
-            threadId,
+            threadId: requestId,
             action: `Received response with status: ${res.status}`,
             resultStatus: res.status,
             timestampOffsetMs: Date.now() - startTime,
@@ -80,10 +86,10 @@ export class VerificationRunner {
       );
     }
 
-    // 3. Await all concurrent tasks
-    const results = await Promise.all(tasks);
+    // 3. Await all concurrent asynchronous tasks via Promise.all
+    await Promise.all(tasks);
 
-    // 4. Calculate actual side effects observed on the service
+    // 4. Calculate actual side effects observed on the service state
     const committedRefunds = service.getCommittedRefunds();
     const observedEffects = committedRefunds.length;
 
@@ -97,7 +103,7 @@ export class VerificationRunner {
 
     const durationMs = Date.now() - startTime;
 
-    // 6. Generate TestSprite 3.0 compatible Playwright / API assertion
+    // 6. Generate TestSprite 3.0 compatible assertion targeting the real verified endpoint
     const testSpriteAssertion = generateTestSpriteCode(input, observedEffects, verdict);
 
     return {
@@ -116,13 +122,17 @@ export class VerificationRunner {
       timeline,
       testSpriteAssertion,
       notes: [
-        `Verified synthetic fixture '${targetId}' using real in-process concurrent execution.`,
-        'Scope: This test proves behavioral outcome on the isolated fixture only, NOT on arbitrary external repositories.',
+        `Target: Verified synthetic first-party fixture '${targetId}' (${targetVersion}) via concurrent Promise.all.`,
+        'Scope Guarantee: This verification proves behavioral outcome on the executed fixture ONLY. It does NOT imply verification of arbitrary external GitHub PRs.',
       ],
     };
   }
 }
 
+/**
+ * Synthesizes a real, executable Playwright / TestSprite test that targets
+ * FlowGuard AI's actual /api/v1/lab/verify API endpoint.
+ */
 function generateTestSpriteCode(
   input: VerificationInputVector,
   observedEffects: number,
@@ -130,26 +140,35 @@ function generateTestSpriteCode(
 ): string {
   return `/**
  * TestSprite 3.0 Automated Test Assertion
- * Target: ${input.fixture === 'vulnerable' ? 'Vulnerable Refund Service' : 'Fixed Refund Service'}
+ * Target: /api/v1/lab/verify (FlowGuard AI Real Lab Endpoint)
  * Invariant: INV-REFUND-001 (Max 1 side-effect per idempotency key)
+ * Fixture: ${input.fixture} (${input.concurrency} concurrent asynchronous requests)
  */
 test('TestSprite: Idempotency under ${input.concurrency} concurrent requests', async ({ request }) => {
-  const paymentId = '${input.paymentId}';
-  const idempotencyKey = '${input.idempotencyKey}';
-  const amountMinor = ${input.amountMinor};
+  const response = await request.post('/api/v1/lab/verify', {
+    data: {
+      fixture: '${input.fixture}',
+      paymentId: '${input.paymentId}',
+      idempotencyKey: '${input.idempotencyKey}',
+      amountMinor: ${input.amountMinor},
+      concurrency: ${input.concurrency},
+      payloadMode: '${input.payloadMode || 'same_amount'}'
+    }
+  });
 
-  // Launch ${input.concurrency} concurrent HTTP requests simultaneously
-  const requests = Array.from({ length: ${input.concurrency} }).map((_, idx) =>
-    request.post('/api/v1/payments/refund', {
-      data: { paymentId, idempotencyKey, amountMinor }
-    })
-  );
+  expect(response.status()).toBe(200);
+  const evidence = await response.json();
 
-  const responses = await Promise.all(requests);
-  const committedCount = responses.filter(r => r.status() === 200 || r.status() === 201).length;
-
-  // Invariant Assertion
-  expect(committedCount).toBeLessThanOrEqual(1);
-  ${verdict === 'VERIFIED_FAIL' ? '// Note: Expected to FAIL on vulnerable implementation (Observed: ' + observedEffects + ')' : '// Note: Successfully PASSED (Observed: ' + observedEffects + ')'}
+  // Invariant Assertion: observed side effects must not exceed 1
+  expect(evidence.invariantId).toBe('INV-REFUND-001');
+  ${
+    verdict === 'VERIFIED_FAIL'
+      ? `// Failure reproduction confirmed: vulnerable fixture observed ${observedEffects} effects (expected <= 1)
+  expect(evidence.verdict).toBe('VERIFIED_FAIL');
+  expect(evidence.observedEffects).toBeGreaterThan(1);`
+      : `// Verification passing confirmed: fixed fixture observed ${observedEffects} effect (expected <= 1)
+  expect(evidence.verdict).toBe('VERIFIED_PASS');
+  expect(evidence.observedEffects).toBeLessThanOrEqual(1);`
+  }
 });`;
 }

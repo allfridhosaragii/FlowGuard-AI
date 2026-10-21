@@ -28,11 +28,24 @@ export default function VerificationLabPage() {
   const [loading, setLoading] = useState(false);
   const [evidence, setEvidence] = useState<VerificationEvidence | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [idempotencyKeyError, setIdempotencyKeyError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const handleRunVerification = async () => {
-    setLoading(true);
+    // Clear stale evidence and prior errors immediately on submit
+    setEvidence(null);
     setError(null);
+    setIdempotencyKeyError(null);
+
+    // Client-side validation: enforce non-empty Idempotency Key
+    if (!idempotencyKey || !idempotencyKey.trim()) {
+      setIdempotencyKeyError('Idempotency Key is required');
+      setError('Idempotency Key is required');
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch('/api/v1/lab/verify', {
         method: 'POST',
@@ -40,8 +53,8 @@ export default function VerificationLabPage() {
         body: JSON.stringify({
           fixture,
           concurrency,
-          paymentId,
-          idempotencyKey,
+          paymentId: paymentId.trim(),
+          idempotencyKey: idempotencyKey.trim(),
           amountMinor,
           payloadMode,
         }),
@@ -54,18 +67,50 @@ export default function VerificationLabPage() {
 
       const data: VerificationEvidence = await res.json();
       setEvidence(data);
-    } catch (err: any) {
-      setError(err.message || 'Unexpected failure while running verification');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected failure while running verification');
+      setEvidence(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     if (!evidence?.testSpriteAssertion) return;
-    navigator.clipboard.writeText(evidence.testSpriteAssertion);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(evidence.testSpriteAssertion);
+        setCopied(true);
+        setCopyFailed(false);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      }
+      throw new Error('Clipboard API unavailable');
+    } catch {
+      // Fallback using temporary textarea for environments where Clipboard API is restricted or headless
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = evidence.testSpriteAssertion;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (successful) {
+          setCopied(true);
+          setCopyFailed(false);
+          setTimeout(() => setCopied(false), 2500);
+          return;
+        }
+      } catch {
+        // Fallback also failed
+      }
+      // Honestly disclose copy failure
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 3000);
+    }
   };
 
   return (
@@ -80,7 +125,7 @@ export default function VerificationLabPage() {
           Controlled Verification Lab
         </h1>
         <p className="text-sm text-muted max-w-2xl leading-relaxed">
-          Prove or disprove business invariants using real concurrent execution. The test harness runs parallel Node.js threads against synthetic financial state machines and collects tangible execution evidence.
+          Prove or disprove business invariants using real concurrent execution. The test harness executes concurrent asynchronous requests against synthetic financial state machines via Promise.all and collects tangible execution evidence.
         </p>
       </div>
 
@@ -105,11 +150,13 @@ export default function VerificationLabPage() {
                 {fixture === 'vulnerable' ? 'Flawed race window' : 'Atomic mutex lock'}
               </span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" aria-label="Target Implementation Fixture">
               <button
                 type="button"
+                id="fixture-vulnerable"
+                aria-pressed={fixture === 'vulnerable'}
                 onClick={() => setFixture('vulnerable')}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all ${
+                className={`min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all focus-visible:ring-2 focus-visible:ring-danger ${
                   fixture === 'vulnerable'
                     ? 'border-danger/60 bg-danger/5 text-danger font-bold'
                     : 'border-border text-muted hover:border-border/80'
@@ -126,8 +173,10 @@ export default function VerificationLabPage() {
 
               <button
                 type="button"
+                id="fixture-fixed"
+                aria-pressed={fixture === 'fixed'}
                 onClick={() => setFixture('fixed')}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all ${
+                className={`min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all focus-visible:ring-2 focus-visible:ring-success ${
                   fixture === 'fixed'
                     ? 'border-success/60 bg-success/5 text-success font-bold'
                     : 'border-border text-muted hover:border-border/80'
@@ -148,15 +197,18 @@ export default function VerificationLabPage() {
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Concurrent Parallel Requests</span>
-              <span className="font-mono text-xs font-bold text-accent">{concurrency} Worker Threads</span>
+              <span className="font-mono text-xs font-bold text-accent">{concurrency} Async Requests</span>
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-2" aria-label="Concurrent Parallel Requests Level">
               {[1, 2, 3, 4, 5].map((lvl) => (
                 <button
                   key={lvl}
                   type="button"
+                  id={`concurrency-btn-${lvl}`}
+                  aria-pressed={concurrency === lvl}
+                  aria-label={`${lvl} concurrent asynchronous requests`}
                   onClick={() => setConcurrency(lvl)}
-                  className={`py-2 text-xs font-bold rounded-md border text-center transition-all ${
+                  className={`min-h-[40px] py-2 text-xs font-bold rounded-md border text-center transition-all focus-visible:ring-2 focus-visible:ring-accent ${
                     concurrency === lvl
                       ? 'bg-accent text-white border-accent'
                       : 'border-border text-muted hover:bg-surface-muted'
@@ -175,35 +227,89 @@ export default function VerificationLabPage() {
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Idempotency Key</label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="lab-idempotency-key" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span>Idempotency Key</span>
+                <span className="text-[10px] text-muted font-normal">(Required)</span>
+              </label>
+              {idempotencyKey ? (
+                <button
+                  type="button"
+                  id="btn-clear-idempotency-key"
+                  onClick={() => {
+                    setIdempotencyKey('');
+                    setIdempotencyKeyError(null);
+                  }}
+                  className="text-[11px] text-accent hover:underline font-medium min-h-[36px] flex items-center px-1 rounded focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Clear Key
+                </button>
+              ) : null}
+            </div>
             <input
+              id="lab-idempotency-key"
+              name="idempotencyKey"
               type="text"
+              aria-label="Idempotency Key"
+              aria-required="true"
+              aria-invalid={!!idempotencyKeyError}
+              aria-describedby={idempotencyKeyError ? 'lab-idempotency-key-error' : undefined}
               value={idempotencyKey}
-              onChange={(e) => setIdempotencyKey(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus:outline-none focus:border-accent"
-              placeholder="e.g. retry-token-881"
+              onChange={(e) => {
+                setIdempotencyKey(e.target.value);
+                if (idempotencyKeyError && e.target.value.trim()) {
+                  setIdempotencyKeyError(null);
+                }
+              }}
+              className={`w-full px-3 py-2 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
+                idempotencyKeyError
+                  ? 'border-danger bg-danger/5 focus:border-danger'
+                  : 'border-border bg-surface-muted/30 focus:border-accent'
+              }`}
+              placeholder="Enter unique idempotency key..."
             />
+            {idempotencyKeyError && (
+              <p
+                id="lab-idempotency-key-error"
+                role="alert"
+                data-testid="lab-idempotency-key-error"
+                className="text-[11px] text-danger font-medium flex items-center gap-1 mt-1"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{idempotencyKeyError}</span>
+              </p>
+            )}
           </div>
 
           {/* Amount & Mode */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Amount (Minor Units)</label>
+              <label htmlFor="lab-amount-input" className="text-xs font-semibold text-foreground">
+                Amount (Minor Units)
+              </label>
               <input
+                id="lab-amount-input"
+                name="amountMinor"
                 type="number"
+                aria-label="Amount in minor units"
                 value={amountMinor}
                 onChange={(e) => setAmountMinor(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 rounded-md border border-border bg-surface-muted/30 text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent focus:border-accent"
               />
               <span className="text-[10px] text-muted block">${(amountMinor / 100).toFixed(2)} USD</span>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Payload Mode</label>
+              <label htmlFor="lab-payload-mode" className="text-xs font-semibold text-foreground">
+                Payload Mode
+              </label>
               <select
+                id="lab-payload-mode"
+                name="payloadMode"
+                aria-label="Payload Mode"
                 value={payloadMode}
-                onChange={(e: any) => setPayloadMode(e.target.value)}
-                className="w-full px-2.5 py-2 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus:outline-none focus:border-accent"
+                onChange={(e) => setPayloadMode(e.target.value as 'same_amount' | 'differing_amount')}
+                className="w-full px-2.5 py-2 rounded-md border border-border bg-surface-muted/30 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-accent focus:border-accent"
               >
                 <option value="same_amount">Identical Amount</option>
                 <option value="differing_amount">Conflicting Amount</option>
@@ -215,14 +321,17 @@ export default function VerificationLabPage() {
           <div className="pt-2">
             <button
               type="button"
+              id="btn-execute-verification"
+              data-testid="btn-execute-verification"
+              aria-label="Execute Verification Harness"
               disabled={loading}
               onClick={handleRunVerification}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Executing Concurrent Threads...</span>
+                  <span>Executing Concurrent Async Requests...</span>
                 </>
               ) : (
                 <>
@@ -234,7 +343,11 @@ export default function VerificationLabPage() {
           </div>
 
           {error && (
-            <div className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+            <div
+              role="alert"
+              data-testid="lab-error-banner"
+              className="p-3 rounded-md bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2"
+            >
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -248,7 +361,7 @@ export default function VerificationLabPage() {
               <FlaskConical className="w-10 h-10 text-muted mx-auto stroke-[1.5]" />
               <h3 className="font-bold text-sm text-foreground">Harness Standing By</h3>
               <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
-                Configure parameters and click <strong>&quot;Execute Verification Harness&quot;</strong> to start concurrent threads and collect execution evidence.
+                Configure parameters and click <strong>&quot;Execute Verification Harness&quot;</strong> to dispatch concurrent asynchronous requests and collect execution evidence.
               </p>
             </div>
           ) : (
@@ -361,11 +474,34 @@ export default function VerificationLabPage() {
                   </h3>
                   <button
                     type="button"
+                    id="btn-copy-test-assertion"
+                    data-testid="btn-copy-test-assertion"
                     onClick={handleCopyCode}
-                    className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover font-medium"
+                    aria-label={copied ? 'Assertion copied to clipboard' : 'Copy test assertion'}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all min-h-[36px] focus-visible:ring-2 focus-visible:ring-accent ${
+                      copied
+                        ? 'bg-success/15 text-success border border-success/30 font-bold'
+                        : copyFailed
+                        ? 'bg-danger/15 text-danger border border-danger/30 font-bold'
+                        : 'text-accent hover:text-accent-hover bg-surface-muted/60 hover:bg-surface-muted border border-border/80'
+                    }`}
                   >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied' : 'Copy Test'}</span>
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-success stroke-[2.5]" />
+                        <span className="text-success">Copied</span>
+                      </>
+                    ) : copyFailed ? (
+                      <>
+                        <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                        <span className="text-danger">Copy Failed</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Test</span>
+                      </>
+                    )}
                   </button>
                 </div>
                 <pre className="p-3.5 rounded-lg bg-surface-muted text-[11px] font-mono text-foreground border border-border overflow-x-auto leading-relaxed">

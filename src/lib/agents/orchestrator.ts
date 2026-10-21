@@ -2,6 +2,7 @@ import { AnalysisResult, StageTrace } from '../schemas/agent-schemas';
 import { RequirementAgent } from './requirement-agent';
 import { RiskHunterAgent } from './risk-agent';
 import { VerificationPlannerAgent } from './verification-agent';
+import { PRCoverageMetadata } from '../github/pr-reader';
 
 export interface AnalysisInput {
   businessRule: string;
@@ -10,10 +11,12 @@ export interface AnalysisInput {
   sourceSha?: string;
   codeDiff?: string;
   filePaths?: string[];
+  prCoverage?: PRCoverageMetadata;
   prContext?: {
     title: string;
     description: string;
     files: string[];
+    coverage?: PRCoverageMetadata;
   };
 }
 
@@ -31,6 +34,9 @@ export class AgentOrchestrator {
     }
     if (input.businessRule.length > 2000) {
       throw new Error('Business rule exceeds maximum length of 2,000 characters');
+    }
+    if (!input.codeDiff || input.codeDiff.trim().length === 0) {
+      throw new Error('Analysis requires non-empty code diff or snippet evidence');
     }
     stages.push({
       stage: 'VALIDATING_INPUT',
@@ -54,7 +60,7 @@ export class AgentOrchestrator {
 
     // Stage 3: EXTRACTING_RULE (Agent A)
     const stage3Start = Date.now();
-    const reqResult = await RequirementAgent.analyze(input.businessRule, input.prContext);
+    const reqResult = await RequirementAgent.analyze(input.businessRule, input.prContext, diff);
     stages.push({
       stage: 'EXTRACTING_RULE',
       status: 'SUCCESS',
@@ -97,15 +103,47 @@ export class AgentOrchestrator {
       summary: 'Pipeline execution finished cleanly.',
     });
 
-    const isRealModel = reqResult.isRealModel || riskResult.isRealModel;
-    const modelUsed = reqResult.modelName;
+    const neuralModels = [reqResult, riskResult]
+      .filter((result) => result.isRealModel)
+      .map((result) => result.modelName);
+    const isRealModel = neuralModels.length > 0;
+    const modelUsed = isRealModel
+      ? [...new Set(neuralModels)].join(' + ')
+      : 'deterministic-heuristic-v1';
 
+    // Provenance is per-agent: a successful neural call in one agent does
+    // not magically make the other agent's fallback output neural.
+    notes.push(`Agent A provenance: ${reqResult.isRealModel ? 'neural' : 'heuristic'} (${reqResult.modelName}).`);
+    notes.push(`Agent B provenance: ${riskResult.isRealModel ? 'neural' : 'heuristic'} (${riskResult.modelName}).`);
     if (!isRealModel) {
       notes.push(
-        'Server-side LLM_API_KEY is not configured in this environment. Analysis was performed using deterministic heuristic rule checking. Results are labeled as heuristic.'
+        'Neural model output was not used (model not configured or model output invalid). Analysis was performed using deterministic heuristic rule checking.'
       );
+    } else if (!reqResult.isRealModel || !riskResult.isRealModel) {
+      notes.push('Mixed provenance: at least one agent used heuristic fallback; see per-agent provenance above.');
     } else {
       notes.push(`Neural inference executed via model: ${modelUsed}.`);
+    }
+
+    if (reqResult.domainMismatch && reqResult.mismatchNotice) {
+      notes.push(reqResult.mismatchNotice);
+    }
+
+    // Partial analysis coverage note
+    if (input.prCoverage?.isPartialAnalysis) {
+      const c = input.prCoverage;
+      let note =
+        `Partial Analysis: This PR contains ${c.totalFiles} changed files. ` +
+        `FlowGuard analysed the ${c.analyzedFiles} most relevant source files and skipped ${c.skippedFiles} ` +
+        `non-code or lower-priority files. ` +
+        `Selection strategy: ${c.selectionStrategy}.`;
+      if (typeof c.filesWithPatch === 'number') {
+        note += ` Verified patches: ${c.filesWithPatch}/${c.analyzedFiles} files.`;
+      }
+      if (c.incompleteReason) {
+        note += ` Limitation reason: ${c.incompleteReason}.`;
+      }
+      notes.push(note);
     }
 
     notes.push(

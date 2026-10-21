@@ -18,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-background text-foreground antialiased selection:bg-accent/15 selection:text-accent">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
