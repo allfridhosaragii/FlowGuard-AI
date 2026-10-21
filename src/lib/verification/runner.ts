@@ -148,8 +148,8 @@ test('TestSprite: Idempotency under ${input.concurrency} concurrent requests', a
   const response = await request.post('/api/v1/lab/verify', {
     data: {
       fixture: '${input.fixture}',
-      paymentId: '${input.paymentId}',
-      idempotencyKey: '${input.idempotencyKey}',
+      paymentId: ${JSON.stringify(input.paymentId)},
+      idempotencyKey: ${JSON.stringify(input.idempotencyKey)},
       amountMinor: ${input.amountMinor},
       concurrency: ${input.concurrency},
       payloadMode: '${input.payloadMode || 'same_amount'}'
