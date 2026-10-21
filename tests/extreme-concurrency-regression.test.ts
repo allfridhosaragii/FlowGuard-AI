@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FixedRefundService } from '../src/lib/domain/refund/fixed-refund';
+import { VerificationRunner } from '../src/lib/verification/runner';
 
 describe('Extreme Bug Hunt: corrected refund fixture invariants', () => {
   it('XBUG-01: prevents over-refunding when different idempotency keys race for same payment', async () => {
@@ -62,5 +63,18 @@ describe('Extreme Bug Hunt: corrected refund fixture invariants', () => {
     expect(second.status).toBe('CONFLICT_REJECTED');
     expect(second.success).toBe(false);
     expect(svc.getCommittedRefunds()).toHaveLength(1);
+  });
+  it('XBUG-08: does not report a successful verification when no refund can commit', async () => {
+    const evidence = await VerificationRunner.execute({
+      fixture: 'fixed',
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'no-money-left',
+      amountMinor: 200000,
+      concurrency: 2,
+    });
+    expect(evidence.observedEffects).toBe(0);
+    expect(evidence.timeline.some((event) => event.resultStatus === 'INVALID_STATE')).toBe(true);
+    expect(evidence.verdict).toBe('INCONCLUSIVE');
+    expect(evidence.testSpriteAssertion).toContain("expect(evidence.verdict).toBe('INCONCLUSIVE')");
   });
 });
