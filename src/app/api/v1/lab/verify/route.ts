@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { VerificationRunner } from '@/lib/verification/runner';
+import { JsonBodyInputError, readBoundedJson } from '@/lib/http/bounded-json';
 
 const LabVerifySchema = z.object({
   fixture: z.enum(['vulnerable', 'fixed']),
@@ -16,7 +17,7 @@ const LabVerifySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await readBoundedJson(req, 16 * 1024);
     const validated = LabVerifySchema.safeParse(body);
 
     if (!validated.success) {
@@ -35,7 +36,10 @@ export async function POST(req: NextRequest) {
 
     const evidence = await VerificationRunner.execute(validated.data);
     return NextResponse.json(evidence, { status: 200 });
-  } catch {
+  } catch (error) {
+    if (error instanceof JsonBodyInputError) {
+      return NextResponse.json({ error: { code: error.code, message: error.message } }, { status: error.status });
+    }
     // Do not expose server-side runner exception contents to untrusted callers.
     return NextResponse.json(
       {
