@@ -5,15 +5,15 @@
 > Built for **TestSprite Hackathon Season 4**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Deployment](https://img.shields.io/badge/Vercel-Feature%20Preview%20Live-black?logo=vercel)](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/)
+[![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-78%20Passing-success)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/Playwright-43%20Passing-success)](tests/e2e.spec.ts)
 
-🔗 **Public Live Preview (latest submission build)**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/)  
+🔗 **Live Production URL (latest submission build)**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
 
-**Production alias**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/) (older `main` deployment until PR #1 is merged). Use the public preview link above to evaluate the latest verified patch.
+**Alternative feature-branch preview**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/). The canonical production website is the URL above. PR #1 is merged into `main`.
 
 ---
 
@@ -37,10 +37,10 @@ FlowGuard AI bridges the gap between **code review** and **runtime verification*
 
 | Route | Description |
 |---|---|
-| [`/`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
-| [`/lab`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
-| [`/analyze`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
-| [`/about`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
+| [`/`](https://flowguard-ai-smoky.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
+| [`/lab`](https://flowguard-ai-smoky.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
+| [`/analyze`](https://flowguard-ai-smoky.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
+| [`/about`](https://flowguard-ai-smoky.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
 
 ---
 
@@ -72,8 +72,8 @@ npm test
 # 2. Run all 43 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
 npx playwright test
 
-# 3. (Optional) Run Playwright directly against live Vercel Preview deployment:
-PLAYWRIGHT_BASE_URL=https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app npx playwright test
+# 3. (Optional) Run Playwright directly against the live production deployment:
+PLAYWRIGHT_BASE_URL=https://flowguard-ai-smoky.vercel.app npx playwright test
 
 # 4. Run Vitest in watch mode:
 npm run test:watch
