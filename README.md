@@ -5,13 +5,15 @@
 > Built for **TestSprite Hackathon Season 4**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
-[![Build Status](https://img.shields.io/badge/Next.js-15.1.7-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-64%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-42%20Passing-success)](tests/e2e.spec.ts)
+[![Deployment](https://img.shields.io/badge/Vercel-Feature%20Preview%20Live-black?logo=vercel)](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/)
+[![Build Status](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-78%20Passing-success)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-43%20Passing-success)](tests/e2e.spec.ts)
 
-🔗 **Live Production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
+🔗 **Public Live Preview (latest submission build)**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
+
+**Production alias**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/) (older `main` deployment until PR #1 is merged). Use the public preview link above to evaluate the latest verified patch.
 
 ---
 
@@ -35,10 +37,10 @@ FlowGuard AI bridges the gap between **code review** and **runtime verification*
 
 | Route | Description |
 |---|---|
-| [`/`](https://flowguard-ai-smoky.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
-| [`/lab`](https://flowguard-ai-smoky.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
-| [`/analyze`](https://flowguard-ai-smoky.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
-| [`/about`](https://flowguard-ai-smoky.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
+| [`/`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
+| [`/lab`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
+| [`/analyze`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
+| [`/about`](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
 
 ---
 
@@ -64,10 +66,10 @@ FlowGuard AI supports:
 FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# 1. Run all 64 Vitest unit & integration tests:
+# 1. Run all 78 Vitest unit & integration tests:
 npm test
 
-# 2. Run all 42 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
+# 2. Run all 43 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
 npx playwright test
 
 # 3. (Optional) Run Playwright directly against live Vercel Preview deployment:
@@ -78,7 +80,7 @@ npm run test:watch
 ```
 
 ### Test Coverage Breakdown:
-- **`tests/model-provenance.test.ts` (6 tests)**:
+- **`tests/model-provenance.test.ts` (20 tests)**:
   - Agent A reports heuristic provenance when neural model returns invalid JSON or empty invariants.
   - Agent B reports heuristic provenance on malformed neural response and retains neural provenance on clean valid output.
   - Strips comments before regex scanning so comments alone cannot fabricate false race-condition findings.
@@ -104,7 +106,7 @@ npm run test:watch
   - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation (preventing fake `NO_RISK_FOUND`), and partial analysis metadata.
 - **`tests/github.test.ts` (22 tests)**:
   - Strict URL validation, unified diff parser, per-file patch filtering, regression test proving skipped files are excluded from Risk Hunter input, oversized diff handling preserving patch boundaries, single-file line truncation, pagination (>100 and >300 files), incomplete pagination API error handling, rate limits (403), 404s, binary file omission, renamed files, and honest error on 0 readable code patches.
-- **`tests/e2e.spec.ts` (13 tests)**:
+- **`tests/e2e.spec.ts` (14 tests)**:
   - `E2E-01`: Landing page navigation and honest CTAs.
   - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
   - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
@@ -135,6 +137,14 @@ npm run test:watch
   - `MOB-04`: Official `Pixel 7` Android mobile profile (DPR: 2.625, 412x839) touch execution of Verification Lab and test assertion clipboard copying.
   - `MOB-05`: Official `iPad Mini` tablet touch profile (DPR: 2, 768x1024) hybrid navigation and responsive layout integrity.
   - Photographic evidence artifacts (19 PNGs) saved to [`docs/screenshots/`](docs/screenshots/).
+
+---
+
+## ✅ Verified Test Evidence — 21 October 2026
+
+- **GitHub Actions**: [run 39527734853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39527734853) — 78 Vitest tests passed, 43 Playwright browser tests passed, TypeScript and build passed, ESLint 0 errors (24 warnings).
+- **TestSprite V3**: [latest PR #1 automated execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/4b812fc5-c9f8-4c63-b387-b1e1567df655) — **22 passed, 0 failed, 1 blocked**. The blocked case requests a 390×844 mobile viewport; its exported runner script does not show a mobile viewport setup. This is **unresolved test execution coverage**, not a passed mobile TestSprite assertion. Independent Playwright mobile emulation at 390×844 is covered by CI.
+- **Automated verification loop**: [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) documents TestSprite PR feedback and GitHub Actions; [Codex audit PR #2](https://github.com/allfridhosaragii/FlowGuard-AI/pull/2) was independently reviewed and merged into the feature branch.
 
 ---
 
