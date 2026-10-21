@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AgentOrchestrator, AnalysisInput } from '@/lib/agents/orchestrator';
 import { GitHubPRReader, PRCoverageMetadata } from '@/lib/github/pr-reader';
+import { JsonBodyInputError, readBoundedJson } from '@/lib/http/bounded-json';
 
 const AnalysisRequestSchema = z
   .object({
@@ -24,7 +25,7 @@ const AnalysisRequestSchema = z
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await readBoundedJson(req, 64 * 1024);
     const validated = AnalysisRequestSchema.safeParse(body);
 
     if (!validated.success) {
@@ -104,7 +105,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 200 });
-  } catch {
+  } catch (error) {
+    if (error instanceof JsonBodyInputError) {
+      return NextResponse.json({ error: { code: error.code, message: error.message } }, { status: error.status });
+    }
     // Never expose internal exceptions or upstream provider messages to public callers.
     return NextResponse.json(
       {
