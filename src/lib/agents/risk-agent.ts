@@ -43,8 +43,18 @@ function parseEvidence(code: string, filePaths: string[]): AnalysisEvidence {
 }
 
 function activeCode(hunk: EvidenceHunk): string {
-  return hunk.lines.map((line) => line.text).join('\n')
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const text = hunk.lines.map((line) => line.text).join('\n');
+  // Only heuristic executable evidence counts. Regex over quoted examples,
+  // test descriptions, and code snippets inside template strings previously
+  // produced CRITICAL phantom refunds even when no executable write existed.
+  // Preserve literal "none" for the explicit unsafe JWT-algorithm detector.
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/.*$/gm, ' ')
+    .replace(/`(?:\\[\s\S]|[^`])*`/g, ' ')
+    .replace(/(['"])(?:\\.|(?!\1)[^\\])*\1/g, (literal) => {
+      return /^(['"])none\1$/i.test(literal) ? literal : ' ';
+    });
 }
 
 function hunkLineRefs(hunk: EvidenceHunk): string[] {
@@ -159,11 +169,13 @@ CRITICAL RULES:
       const code = activeCode(hunk);
       const hasAsyncGap = /setTimeout|sleep|await\s+new\s+Promise/i.test(code)
         || (/findOne|findById|select.*from/i.test(code) && /create|insert|update|save/i.test(code));
-      const hasMutation = /refund|settle|transfer|deduct|balance|withdraw|charge/i.test(code);
+      const hasStateRead = /\b(?:find(?:One|ById)?|read\w*|get\w*|select|lookup|query\w*|exists)\s*\(/i.test(code);
+      const hasMutation = /\b(?:insert\w*|create\w*|save\w*|commit\w*|update\w*|transfer\w*|charge\w*|deduct\w*|withdraw\w*)\s*\(/i.test(code)
+        && /refund|settle|transfer|deduct|balance|withdraw|charge|payment/i.test(code);
       const protectedWrite = /\.lock\s*\(|acquireLock|inFlightClaims|mutex|atomic\w+|transaction\(|isolation:\s*['"]serializable['"]|pessimistic/i.test(code);
       const sourcePaths = file.path ? [file.path] : [];
       const sourceLineRefs = evidence.isUnifiedDiff ? hunkLineRefs(hunk) : [];
-      if (hasAsyncGap && hasMutation && !protectedWrite) findings.push({
+      if (hasAsyncGap && hasStateRead && hasMutation && !protectedWrite) findings.push({
         id: 'RISK-001', ruleId: inv.id, severity: 'CRITICAL', sourcePaths, sourceLineRefs,
         why: 'Asynchronous state check is decoupled from the state write without atomic locking or distributed reservation. Concurrent requests can read uncommitted state and cause duplicate side effects.',
         counterexample: 'Two concurrent requests with the identical idempotency key arrive within the async window; both pass the existence check and each commits a duplicate refund.', status: 'POTENTIAL',
