@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { VerificationRunner } from '@/lib/verification/runner';
+import { JsonBodyInputError, readBoundedJson } from '@/lib/http/bounded-json';
 
 const LabVerifySchema = z.object({
   fixture: z.enum(['vulnerable', 'fixed']),
@@ -9,12 +10,14 @@ const LabVerifySchema = z.object({
   amountMinor: z.number().int().min(1, 'Amount must be greater than 0').max(1000000),
   concurrency: z.number().int().min(1, 'Concurrency must be at least 1').max(5, 'Concurrency cannot exceed 5'),
   payloadMode: z.enum(['same_amount', 'differing_amount']).optional(),
-  iterations: z.number().int().min(1).max(20).optional(),
+  iterations: z.number().int().min(1).max(20)
+    .refine((count) => count === 1, { message: 'Multi-iteration execution is not supported; send iterations: 1 or omit it' })
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await readBoundedJson(req, 16 * 1024);
     const validated = LabVerifySchema.safeParse(body);
 
     if (!validated.success) {
@@ -34,11 +37,15 @@ export async function POST(req: NextRequest) {
     const evidence = await VerificationRunner.execute(validated.data);
     return NextResponse.json(evidence, { status: 200 });
   } catch (error) {
+    if (error instanceof JsonBodyInputError) {
+      return NextResponse.json({ error: { code: error.code, message: error.message } }, { status: error.status });
+    }
+    // Do not expose server-side runner exception contents to untrusted callers.
     return NextResponse.json(
       {
         error: {
           code: 'RUNNER_ERROR',
-          message: error instanceof Error ? error.message : 'Verification harness encountered an internal failure',
+          message: 'Verification harness encountered an internal failure',
         },
       },
       { status: 500 }

@@ -13,10 +13,11 @@ export class FixedRefundService {
   private payment: PaymentRecord;
   private committedRefunds: RefundResult[] = [];
   private ledger: Map<string, RefundResult> = new Map();
-  private inFlightClaims: Map<string, Promise<RefundResult>> = new Map();
+  private inFlightClaims: Map<string, { paymentId: string; amountMinor: number; promise: Promise<RefundResult> }> = new Map();
+  private reservedAmountMinor = 0;
 
   constructor(payment?: PaymentRecord) {
-    this.payment = payment || {
+    this.payment = payment ? { ...payment } : {
       paymentId: 'pay_demo_001',
       originalAmountMinor: 125000,
       currency: 'USD',
@@ -26,24 +27,52 @@ export class FixedRefundService {
   }
 
   public getCommittedRefunds(): RefundResult[] {
-    return [...this.committedRefunds];
+    return this.committedRefunds.map((refund) => ({ ...refund }));
   }
 
   public async processRefund(request: RefundRequest): Promise<RefundResult> {
     const { paymentId, idempotencyKey, amountMinor } = request;
 
+    // The domain layer must reject invalid values even when called outside an HTTP route.
+    // Prevent zero-value commits, negative refunds, fractional minor units and NaN corruption.
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Refund amount must be a positive safe integer in minor units',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+
+    // Reject invalid identifiers at the domain boundary, including calls that bypass HTTP validation.
+    if (typeof paymentId !== 'string' || !paymentId.trim() ||
+        typeof idempotencyKey !== 'string' || !idempotencyKey.trim()) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment ID and idempotency key are required',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+
     // STEP 1: Check committed ledger for existing result
     const existing = this.ledger.get(idempotencyKey);
     if (existing) {
       // Check payload consistency
-      if (existing.amountMinor !== amountMinor) {
+      if (existing.amountMinor !== amountMinor || existing.paymentId !== paymentId) {
         return {
           success: false,
           paymentId,
           idempotencyKey,
           amountMinor,
           status: 'CONFLICT_REJECTED',
-          error: `Idempotency conflict: key was previously used with amount ${existing.amountMinor}, not ${amountMinor}`,
+          error: 'Idempotency conflict: key was previously used for another payment or amount',
           executedAtUtc: new Date().toISOString(),
         };
       }
@@ -57,28 +86,71 @@ export class FixedRefundService {
     // If a request with this key is already executing, await the in-flight execution!
     const activeFlight = this.inFlightClaims.get(idempotencyKey);
     if (activeFlight) {
-      const activeResult = await activeFlight;
-      return {
-        ...activeResult,
-        status: 'DUPLICATE_IGNORED',
-      };
-    }
-
-    // STEP 3: Reserve in-flight lock BEFORE any async operations
-    const executionPromise = (async (): Promise<RefundResult> => {
-      // Validate bounds & balance
-      if (this.payment.refundedAmountMinor + amountMinor > this.payment.originalAmountMinor) {
+      // Conflicting retries MUST NOT inherit a successful refund from the first request.
+      if (activeFlight.paymentId !== paymentId || activeFlight.amountMinor !== amountMinor) {
         return {
           success: false,
           paymentId,
           idempotencyKey,
           amountMinor,
-          status: 'INVALID_STATE',
-          error: 'Exceeds refundable amount',
+          status: 'CONFLICT_REJECTED',
+          error: 'Idempotency conflict: key is already processing another payment or amount',
           executedAtUtc: new Date().toISOString(),
         };
       }
+      const activeResult = await activeFlight.promise;
+      return {
+        ...activeResult,
+        status: activeResult.success ? 'DUPLICATE_IGNORED' : activeResult.status,
+      };
+    }
 
+    // A refund may never be charged to a different payment record. Resolve idempotency
+    // conflicts first, then validate new requests against the actual selected payment.
+    if (paymentId !== this.payment.paymentId) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment ID does not match the selected payment record',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+    if (!Number.isSafeInteger(this.payment.originalAmountMinor) ||
+        this.payment.originalAmountMinor <= 0 ||
+        !Number.isSafeInteger(this.payment.refundedAmountMinor) ||
+        this.payment.refundedAmountMinor < 0 ||
+        this.payment.status === 'REFUNDED') {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment record is not in a refundable state',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+
+    // STEP 3: Synchronously reserve refundable funds across ALL distinct idempotency keys.
+    // Merely locking each key is insufficient: independent keys race on the same balance.
+    if (this.payment.refundedAmountMinor + this.reservedAmountMinor + amountMinor > this.payment.originalAmountMinor) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Exceeds refundable amount',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+    this.reservedAmountMinor += amountMinor;
+
+    // STEP 4: Reserve in-flight key BEFORE any async operations
+    const executionPromise = (async (): Promise<RefundResult> => {
       // Simulates real payment gateway / DB operation latency
       await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -105,12 +177,13 @@ export class FixedRefundService {
       return result;
     })();
 
-    this.inFlightClaims.set(idempotencyKey, executionPromise);
+    this.inFlightClaims.set(idempotencyKey, { paymentId, amountMinor, promise: executionPromise });
 
     try {
       return await executionPromise;
     } finally {
       this.inFlightClaims.delete(idempotencyKey);
+      this.reservedAmountMinor -= amountMinor;
     }
   }
 }

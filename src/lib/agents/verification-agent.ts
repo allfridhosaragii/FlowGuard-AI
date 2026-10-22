@@ -16,8 +16,8 @@ export class VerificationPlannerAgent {
     if (findings.length === 0) {
       return {
         plans: [],
-        isRealModel: isConfigured,
-        modelName: isConfigured ? AIProvider.getModelName() : 'heuristic-rule-engine-v1',
+        isRealModel: false,
+        modelName: 'heuristic-rule-engine-v1 (no planning performed)',
       };
     }
 
@@ -73,14 +73,14 @@ ${JSON.stringify(findings, null, 2)}`;
         );
         return {
           plans,
-          isRealModel: true,
+          isRealModel: response.isRealModel,
           modelName: response.modelName,
         };
       } catch (err) {
         return {
           plans: this.heuristicPlan(findings),
-          isRealModel: true,
-          modelName: response.modelName,
+          isRealModel: false,
+          modelName: 'heuristic-rule-engine-v1 (invalid model output)',
         };
       }
     }
