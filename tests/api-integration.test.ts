@@ -149,6 +149,8 @@ async function processRefund(idempotencyKey, amount) {
       expect(data.findings.length).toBeGreaterThanOrEqual(1);
       expect(data.plans.length).toBeGreaterThanOrEqual(1);
       expect(data.stages.length).toBe(6);
+      expect(data.selectedPrUrl).toBeNull();
+      expect(data.prFetchStatus).toBe('NOT_APPLICABLE');
     });
 
     it('returns 400 INVALID_INPUT when business rule is too short (< 10 chars)', async () => {
@@ -247,6 +249,8 @@ async function processRefund(idempotencyKey, amount) {
       expect(data.error.message).toContain('no readable code patches');
       // Proves no fake NO_RISK_FOUND verdict is emitted
       expect(data.verdict).toBeUndefined();
+      expect(data.prFetchStatus).toBeUndefined();
+      expect(data.selectedPrUrl).toBeUndefined();
     });
 
     it('returns 200 with partial analysis badge metadata when PR is large', async () => {
@@ -289,6 +293,12 @@ async function processRefund(idempotencyKey, amount) {
       expect(data.runId).toBeTruthy();
       expect(data.notes.some((n: string) => n.startsWith('Partial Analysis:'))).toBe(true);
       expect(data.notes.some((n: string) => n.includes('45 changed files'))).toBe(true);
+      // Live provenance must be explicit, tied to the exact requested PR URL,
+      // and independent of coverage being partial (30 of 45 files analyzed).
+      expect(data.sourceReference).toBe('https://github.com/owner/repo/pull/1');
+      expect(data.selectedPrUrl).toBe('https://github.com/owner/repo/pull/1');
+      expect(data.prFetchStatus).toBe('LIVE_FETCH');
+      expect(data.sourceSha).toBe('def456');
     });
   });
 });
