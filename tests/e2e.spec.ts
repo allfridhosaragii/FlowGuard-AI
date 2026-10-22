@@ -8,9 +8,21 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     expect(pageResponse.headers()['x-frame-options']).toBe('DENY');
     expect(pageResponse.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
     expect(pageResponse.headers()['strict-transport-security']).toContain('max-age=31536000');
+    const csp = pageResponse.headers()['content-security-policy'];
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("connect-src 'self'");
+    expect(pageResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
+    expect(pageResponse.headers()['cross-origin-embedder-policy']).toBe('require-corp');
+    expect(pageResponse.headers()['cross-origin-resource-policy']).toBe('same-origin');
     const apiResponse = await request.get('/api/v1/health');
     expect(apiResponse.ok()).toBe(true);
     expect(apiResponse.headers()['cache-control']).toContain('no-store');
+    const sitemapResponse = await request.get('/sitemap.xml');
+    expect(sitemapResponse.ok()).toBe(true);
+    expect(sitemapResponse.headers()['cache-control']).toContain('max-age=3600');
+    expect(sitemapResponse.headers()['cache-control']).not.toContain('no-store');
   });
 
   test('E2E-01: Landing page loads cleanly with honest CTAs and navigation', async ({ page }) => {
