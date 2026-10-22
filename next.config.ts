@@ -46,10 +46,6 @@ const nextConfig: NextConfig = {
       // Public SEO metadata is not confidential. Cache it briefly to avoid
       // needlessly marking sitemap/robots as non-storable.
       {
-        source: '/sitemap.xml',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600' }],
-      },
-      {
         source: '/robots.txt',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=3600' }],
       },
