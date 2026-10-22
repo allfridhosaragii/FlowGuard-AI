@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     let sourceSha = 'manual:input';
     let sourceReference = 'Manual Code Input';
     let sourceType: 'GITHUB_PR' | 'MANUAL_CODE' = 'MANUAL_CODE';
+    let prFetchStatus: AnalysisInput['prFetchStatus'];
 
     // If GitHub PR is provided, fetch via read-only REST API
     if (githubPrUrl) {
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
         diff = pr.diff;
         files = pr.changedFiles;
         sourceSha = pr.headSha;
+        // All PR data came from a successful, non-cached GitHub API fetch.
+        // Failed fetches return 422 above; we never silently substitute sample data.
+        prFetchStatus = 'LIVE_FETCH';
         prCoverage = pr.coverage;
         prContext = {
           title: pr.title,
@@ -96,6 +100,7 @@ export async function POST(req: NextRequest) {
       businessRule,
       sourceType,
       sourceReference,
+      prFetchStatus,
       sourceSha,
       codeDiff: diff,
       filePaths: files,
