@@ -24,7 +24,7 @@ jobs:
         continue-on-error: true
         env:
           SEMGREP_SEND_METRICS: 'off'
-        run: semgrep scan --config auto --json --output semgrep-report.json src tests .github
+        run: semgrep scan --config p/default --metrics off --json --output semgrep-report.json src tests .github
       - name: Upload Semgrep evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -84,8 +84,10 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
+          mkdir -p "$GITHUB_WORKSPACE/zap-evidence"
+          chmod 777 "$GITHUB_WORKSPACE/zap-evidence"
           docker run --rm --network host \
-            -v "$GITHUB_WORKSPACE:/zap/wrk/:rw" \
+            -v "$GITHUB_WORKSPACE/zap-evidence:/zap/wrk:rw" \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t http://127.0.0.1:3100 -m 1 -I \
             -J zap-baseline.json -r zap-baseline.html
@@ -95,6 +97,6 @@ jobs:
         with:
           name: zap-local-passive-evidence
           path: |
-            zap-baseline.json
-            zap-baseline.html
+            zap-evidence/zap-baseline.json
+            zap-evidence/zap-baseline.html
           if-no-files-found: warn
