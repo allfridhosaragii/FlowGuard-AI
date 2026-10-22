@@ -46,7 +46,13 @@ describe('Extreme Bug Hunt: corrected refund fixture invariants', () => {
   });
 
   it('XBUG-03: rejects reuse of an idempotency key for another payment', async () => {
-    const svc = new FixedRefundService();
+    const svc = new FixedRefundService({
+      paymentId: 'pay_one',
+      originalAmountMinor: 125000,
+      currency: 'USD',
+      status: 'SETTLED',
+      refundedAmountMinor: 0,
+    });
     const first = await svc.processRefund({
       paymentId: 'pay_one',
       idempotencyKey: 'same-key-across-payments',
