@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { AgentOrchestrator, AnalysisInput } from '@/lib/agents/orchestrator';
 import { GitHubPRReader, PRCoverageMetadata } from '@/lib/github/pr-reader';
+import { JsonBodyInputError, readBoundedJson } from '@/lib/http/bounded-json';
 
 const AnalysisRequestSchema = z
   .object({
     businessRule: z.string().trim().min(10, 'Business rule must be at least 10 characters').max(2000),
-    githubPrUrl: z.string().trim().url('Invalid GitHub PR URL format').optional().or(z.literal('')),
+    githubPrUrl: z.string().trim().url('Invalid GitHub PR URL format').max(2048).optional().or(z.literal('')),
     codeSnippet: z.string().trim().max(30000).optional().or(z.literal('')),
-    filePaths: z.array(z.string()).optional(),
+    filePaths: z.array(z.string().trim().min(1).max(512)).max(30).optional(),
   })
   .refine(
     (data) => {
@@ -24,7 +25,7 @@ const AnalysisRequestSchema = z
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await readBoundedJson(req, 64 * 1024);
     const validated = AnalysisRequestSchema.safeParse(body);
 
     if (!validated.success) {
@@ -110,11 +111,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
+    if (error instanceof JsonBodyInputError) {
+      return NextResponse.json({ error: { code: error.code, message: error.message } }, { status: error.status });
+    }
+    // Never expose internal exceptions or upstream provider messages to public callers.
     return NextResponse.json(
       {
         error: {
           code: 'ORCHESTRATION_ERROR',
-          message: error instanceof Error ? error.message : 'Analysis pipeline encountered an unexpected error',
+          message: 'Analysis pipeline encountered an unexpected error',
         },
       },
       { status: 500 }
