@@ -17,7 +17,7 @@ export class FixedRefundService {
   private reservedAmountMinor = 0;
 
   constructor(payment?: PaymentRecord) {
-    this.payment = payment || {
+    this.payment = payment ? { ...payment } : {
       paymentId: 'pay_demo_001',
       originalAmountMinor: 125000,
       currency: 'USD',
@@ -27,7 +27,7 @@ export class FixedRefundService {
   }
 
   public getCommittedRefunds(): RefundResult[] {
-    return [...this.committedRefunds];
+    return this.committedRefunds.map((refund) => ({ ...refund }));
   }
 
   public async processRefund(request: RefundRequest): Promise<RefundResult> {
