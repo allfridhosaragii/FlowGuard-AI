@@ -67,6 +67,23 @@ describe('Extreme Bug Hunt: validation and evidence safety', () => {
     expect(service.getCommittedRefunds()).toHaveLength(0);
   });
 
+  it('XBUG-20: direct runner rejects fractional concurrency and unknown fixtures', async () => {
+    await expect(VerificationRunner.execute({
+      fixture: 'fixed',
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'fractional-concurrency',
+      amountMinor: 25000,
+      concurrency: 1.5,
+    })).rejects.toThrow(/Concurrency must/i);
+    await expect(VerificationRunner.execute({
+      fixture: 'unknown' as 'fixed',
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'unknown-fixture',
+      amountMinor: 25000,
+      concurrency: 2,
+    })).rejects.toThrow(/allowlisted/i);
+  });
+
   it('XBUG-10: rejects requested repeated iterations instead of silently running once', async () => {
     const response = await labVerify(new NextRequest('http://localhost:3000/api/v1/lab/verify', {
       method: 'POST',
