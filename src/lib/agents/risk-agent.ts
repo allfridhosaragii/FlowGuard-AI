@@ -51,7 +51,7 @@ function activeCode(hunk: EvidenceHunk): string {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/\/\/.*$/gm, ' ')
-    .replace(/`(?:\\[\s\S]|[^`])*`/g, ' ')
+    .replace(/`(?:\\[\s\S]|[^`\\])*`/g, ' ')
     .replace(/(['"])(?:\\.|(?!\1)[^\\])*\1/g, (literal) => {
       return /^(['"])none\1$/i.test(literal) ? literal : ' ';
     });
