@@ -24,7 +24,9 @@ export interface LLMResponse {
 
 export class AIProvider {
   public static isConfigured(): boolean {
-    return Boolean(
+    // A key existing in the host environment is NOT authorization to incur
+    // charges from a public, unauthenticated analysis endpoint.
+    return process.env.FLOWGUARD_ENABLE_NEURAL === 'true' && Boolean(
       process.env.GEMINI_API_KEY ||
       process.env.OPENAI_API_KEY ||
       process.env.LLM_API_KEY
@@ -48,6 +50,15 @@ export class AIProvider {
     systemPrompt: string,
     userPrompt: string
   ): Promise<LLMResponse> {
+    // Fail closed by default: no paid inference even if a deployment
+    // accidentally inherits a valid provider API key.
+    if (!this.isConfigured()) {
+      return {
+        content: '',
+        isRealModel: false,
+        modelName: 'deterministic-heuristic-v1',
+      };
+    }
     const geminiKey = process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY || process.env.LLM_API_KEY;
 
