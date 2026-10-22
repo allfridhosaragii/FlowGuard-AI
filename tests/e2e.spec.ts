@@ -384,6 +384,83 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     await expect(page.locator('text=RISK-001')).not.toBeVisible();
   });
 
+  test('E2E-14: selected PR URL and verified live fetch provenance appear in the report', async ({ page }) => {
+    const prUrl = 'https://github.com/allfridhosaragii/FlowGuard-AI/pull/1';
+    await page.route('**/api/v1/analyses', async (route) => {
+      const requestBody = route.request().postDataJSON();
+      expect(requestBody.githubPrUrl).toBe(prUrl);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          runId: 'provenance-e2e-001',
+          sourceType: 'GITHUB_PR',
+          sourceReference: prUrl,
+          selectedPrUrl: prUrl,
+          prFetchStatus: 'LIVE_FETCH',
+          sourceSha: 'abcdef123456',
+          businessRule: requestBody.businessRule,
+          invariants: [],
+          findings: [],
+          plans: [],
+          stages: [],
+          modelUsed: 'deterministic-heuristic-v1',
+          isRealModel: false,
+          verdict: 'NO_RISK_FOUND',
+          executedAtUtc: '2026-10-22T10:00:00.000Z',
+          notes: ['Evidence Scope: All findings for external PRs are classified as POTENTIAL until target code is executed in an isolated verification sandbox.'],
+        }),
+      });
+    });
+    await page.goto('/analyze');
+    await page.getByRole('tab', { name: 'Public GitHub PR' }).click();
+    await page.getByRole('button', { name: /Load Sample PR/ }).click();
+    await page.locator('#btn-launch-analysis').click();
+    const provenance = page.getByTestId('pr-source-provenance');
+    await expect(provenance).toBeVisible();
+    await expect(provenance).toContainText(prUrl);
+    await expect(page.getByTestId('pr-fetch-status')).toContainText('Live fetch (GitHub API)');
+    await expect(provenance).toContainText('PR head SHA: abcdef123456');
+    await expect(provenance).not.toContainText('Fallback data was used');
+  });
+
+  test('E2E-15: fallback provenance is never described as a live PR fetch', async ({ page }) => {
+    const prUrl = 'https://github.com/allfridhosaragii/FlowGuard-AI/pull/1';
+    await page.route('**/api/v1/analyses', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          runId: 'provenance-e2e-002',
+          sourceType: 'GITHUB_PR',
+          sourceReference: prUrl,
+          selectedPrUrl: prUrl,
+          prFetchStatus: 'FALLBACK_USED',
+          sourceSha: 'fallback:unverified',
+          businessRule: 'A settled payment can create at most one refund.',
+          invariants: [],
+          findings: [],
+          plans: [],
+          stages: [],
+          modelUsed: 'heuristic-rule-engine-v1',
+          isRealModel: false,
+          verdict: 'INCONCLUSIVE',
+          executedAtUtc: '2026-10-22T10:00:00.000Z',
+          notes: ['Provenance is not live.'],
+        }),
+      });
+    });
+    await page.goto('/analyze');
+    await page.getByRole('tab', { name: 'Public GitHub PR' }).click();
+    await page.getByRole('button', { name: /Load Sample PR/ }).click();
+    await page.locator('#btn-launch-analysis').click();
+    const provenance = page.getByTestId('pr-source-provenance');
+    await expect(provenance).toContainText(prUrl);
+    await expect(page.getByTestId('pr-fetch-status')).toContainText('Fallback used');
+    await expect(provenance).toContainText('This report does not claim a live GitHub PR fetch.');
+    await expect(page.getByTestId('pr-fetch-status')).not.toContainText('Live fetch');
+  });
+
   test('clearing code invalidates an analysis still in flight', async ({ page }) => {
     let routeHandled!: () => void;
     const handled = new Promise<void>((resolve) => { routeHandled = resolve; });

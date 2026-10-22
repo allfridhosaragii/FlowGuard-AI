@@ -267,7 +267,7 @@ export class GitHubPRReader {
       const url =
         `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files` +
         `?per_page=${this.PAGE_SIZE}&page=${page}`;
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: 'no-store' });
 
       if (!res.ok) {
         if (page === 1) {
@@ -367,7 +367,7 @@ export class GitHubPRReader {
 
     // 1. Fetch PR details
     const prUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`;
-    const prResponse = await fetch(prUrl, { headers });
+    const prResponse = await fetch(prUrl, { headers, cache: 'no-store' });
 
     if (!prResponse.ok) {
       if (prResponse.status === 404) {
@@ -413,7 +413,7 @@ export class GitHubPRReader {
 
     if (needsUnifiedDiff) {
       const diffHeaders = { ...headers, Accept: 'application/vnd.github.v3.diff' };
-      const diffResponse = await fetch(prUrl, { headers: diffHeaders });
+      const diffResponse = await fetch(prUrl, { headers: diffHeaders, cache: 'no-store' });
 
       if (diffResponse.ok) {
         const fullDiff = await diffResponse.text();

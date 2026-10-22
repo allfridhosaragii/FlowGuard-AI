@@ -52,10 +52,16 @@ export const StageTraceSchema = z.object({
 });
 export type StageTrace = z.infer<typeof StageTraceSchema>;
 
+export const SourceFetchStatusSchema = z.enum(['LIVE_FETCH', 'CACHED', 'FALLBACK_USED', 'NOT_APPLICABLE', 'UNKNOWN']);
+export type SourceFetchStatus = z.infer<typeof SourceFetchStatusSchema>;
+
 export const AnalysisResultSchema = z.object({
   runId: z.string(),
   sourceType: z.enum(['GITHUB_PR', 'MANUAL_CODE']),
   sourceReference: z.string(),
+  // Explicit provenance; optional for backwards-compatible older reports.
+  selectedPrUrl: z.string().url().nullable().optional(),
+  prFetchStatus: SourceFetchStatusSchema.optional(),
   sourceSha: z.string(),
   businessRule: z.string(),
   invariants: z.array(BusinessInvariantSchema),

@@ -583,6 +583,40 @@ export default function AnalysisWorkspacePage() {
                       </span>
                     )}
                   </div>
+                  {result.sourceType === 'GITHUB_PR' && (
+                    <div data-testid="pr-source-provenance" className="mt-3 space-y-1.5 rounded-md border border-border bg-surface-muted/40 p-3 text-xs">
+                      <p className="font-semibold text-foreground">Selected PR URL:</p>
+                      {result.selectedPrUrl ? (
+                        <a
+                          href={result.selectedPrUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block break-all text-accent underline"
+                          data-testid="pr-source-url"
+                        >
+                          {result.selectedPrUrl}
+                        </a>
+                      ) : (
+                        <p className="text-warning">PR URL not recorded. Source provenance is unverified.</p>
+                      )}
+                      <p data-testid="pr-fetch-status" className="font-medium text-foreground">
+                        Fetch status: {result.prFetchStatus === 'LIVE_FETCH'
+                          ? 'Live fetch (GitHub API)'
+                          : result.prFetchStatus === 'CACHED'
+                          ? 'Cached'
+                          : result.prFetchStatus === 'FALLBACK_USED'
+                          ? 'Fallback used'
+                          : 'Unverified'}
+                      </p>
+                      {result.prFetchStatus === 'LIVE_FETCH' && (
+                        <p className="text-muted">PR metadata and diff fetched from the selected GitHub URL. No stored or sample content substituted.</p>
+                      )}
+                      {result.prFetchStatus === 'FALLBACK_USED' && (
+                        <p className="text-warning">Fallback data was used. This report does not claim a live GitHub PR fetch.</p>
+                      )}
+                      <p className="break-all text-muted">PR head SHA: {result.sourceSha}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-right">
