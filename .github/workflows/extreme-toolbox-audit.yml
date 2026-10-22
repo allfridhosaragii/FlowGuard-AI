@@ -1,0 +1,100 @@
+name: Extreme Toolbox Audit (isolated PR)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep-sast:
+    name: Semgrep SAST (audit evidence)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Semgrep
+        run: python -m pip install semgrep
+      - name: Scan application source and workflows
+        continue-on-error: true
+        env:
+          SEMGREP_SEND_METRICS: 'off'
+        run: semgrep scan --config auto --json --output semgrep-report.json src tests .github
+      - name: Upload Semgrep evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-audit-evidence
+          path: semgrep-report.json
+          if-no-files-found: warn
+
+  trivy-supply-chain:
+    name: Trivy dependency, secret and misconfiguration scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem audit
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: json
+          output: trivy-report.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: '0'
+      - name: Upload Trivy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-audit-evidence
+          path: trivy-report.json
+          if-no-files-found: warn
+
+  zap-local-passive:
+    name: OWASP ZAP baseline against isolated localhost
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build isolated application
+        run: npm ci --no-fund && npm run build
+      - name: Start isolated application, never attack production
+        shell: bash
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/flowguard-local.log 2>&1 &
+          echo "FLOWGUARD_PID=$!" >> "$GITHUB_ENV"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3100/api/v1/health > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/flowguard-local.log
+          exit 1
+      - name: ZAP baseline, passive rules only
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://127.0.0.1:3100 -m 1 -I \
+            -J zap-baseline.json -r zap-baseline.html
+      - name: Upload ZAP evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-local-passive-evidence
+          path: |
+            zap-baseline.json
+            zap-baseline.html
+          if-no-files-found: warn
