@@ -60,7 +60,13 @@ describe('Controlled Verification Lab - INV-REFUND-001', () => {
   });
 
   it('V-05: fixed fixture rejects conflicting reuse of idempotency key with differing amounts', async () => {
-    const service = new FixedRefundService();
+    const service = new FixedRefundService({
+      paymentId: 'pay_test_005',
+      originalAmountMinor: 125000,
+      currency: 'USD',
+      status: 'SETTLED',
+      refundedAmountMinor: 0,
+    });
     const req1 = await service.processRefund({
       paymentId: 'pay_test_005',
       idempotencyKey: 'key_conflict_check',
