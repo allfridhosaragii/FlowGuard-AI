@@ -84,6 +84,47 @@ describe('Extreme Bug Hunt: validation and evidence safety', () => {
     })).rejects.toThrow(/allowlisted/i);
   });
 
+  it('XBUG-24: returned committed refunds cannot mutate the internal ledger', async () => {
+    const service = new FixedRefundService();
+    await service.processRefund({
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'ledger-protection',
+      requestId: 'first',
+      amountMinor: 25000,
+    });
+    const external = service.getCommittedRefunds();
+    external[0].amountMinor = 1;
+    expect(service.getCommittedRefunds()[0].amountMinor).toBe(25000);
+    const duplicate = await service.processRefund({
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'ledger-protection',
+      requestId: 'retry',
+      amountMinor: 25000,
+    });
+    expect(duplicate.status).toBe('DUPLICATE_IGNORED');
+    expect(duplicate.amountMinor).toBe(25000);
+  });
+
+  it('XBUG-25: external PaymentRecord mutation cannot bypass balance reservations', async () => {
+    const record = {
+      paymentId: 'pay_demo_001',
+      originalAmountMinor: 125000,
+      currency: 'USD',
+      status: 'SETTLED' as const,
+      refundedAmountMinor: 0,
+    };
+    const service = new FixedRefundService(record);
+    record.originalAmountMinor = 999999999;
+    const response = await service.processRefund({
+      paymentId: 'pay_demo_001',
+      idempotencyKey: 'overflow-attempt',
+      requestId: 'over',
+      amountMinor: 150000,
+    });
+    expect(response.status).toBe('INVALID_STATE');
+    expect(service.getCommittedRefunds()).toHaveLength(0);
+  });
+
   it('XBUG-10: rejects requested repeated iterations instead of silently running once', async () => {
     const response = await labVerify(new NextRequest('http://localhost:3000/api/v1/lab/verify', {
       method: 'POST',
