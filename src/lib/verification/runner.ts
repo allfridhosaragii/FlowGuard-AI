@@ -28,8 +28,11 @@ export class VerificationRunner {
     if (input.concurrency < 1 || input.concurrency > 5) {
       throw new Error('Concurrency must be between 1 and 5 concurrent asynchronous requests');
     }
-    if (input.amountMinor < 1 || input.amountMinor > 1000000) {
-      throw new Error('Amount must be between 1 and 1,000,000 minor units');
+    if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor < 1 || input.amountMinor > 1000000) {
+      throw new Error('Amount must be a safe integer between 1 and 1,000,000 minor units');
+    }
+    if (input.iterations !== undefined && input.iterations !== 1) {
+      throw new Error('Multi-iteration execution is not supported; send iterations: 1 or omit it');
     }
 
     const service =
@@ -97,7 +100,7 @@ export class VerificationRunner {
     let verdict: VerificationVerdict = 'INCONCLUSIVE';
     if (observedEffects > 1) {
       verdict = 'VERIFIED_FAIL';
-    } else if (observedEffects <= 1) {
+    } else if (observedEffects === 1) {
       verdict = 'VERIFIED_PASS';
     }
 
@@ -124,6 +127,7 @@ export class VerificationRunner {
       notes: [
         `Target: Verified synthetic first-party fixture '${targetId}' (${targetVersion}) via concurrent Promise.all.`,
         'Scope Guarantee: This verification proves behavioral outcome on the executed fixture ONLY. It does NOT imply verification of arbitrary external GitHub PRs.',
+        ...(verdict === 'INCONCLUSIVE' ? ['No refund was committed: no valid successful side effect was exercised, so the idempotency verdict is inconclusive.'] : []),
       ],
     };
   }
@@ -148,8 +152,8 @@ test('TestSprite: Idempotency under ${input.concurrency} concurrent requests', a
   const response = await request.post('/api/v1/lab/verify', {
     data: {
       fixture: '${input.fixture}',
-      paymentId: '${input.paymentId}',
-      idempotencyKey: '${input.idempotencyKey}',
+      paymentId: ${JSON.stringify(input.paymentId)},
+      idempotencyKey: ${JSON.stringify(input.idempotencyKey)},
       amountMinor: ${input.amountMinor},
       concurrency: ${input.concurrency},
       payloadMode: '${input.payloadMode || 'same_amount'}'
@@ -166,9 +170,13 @@ test('TestSprite: Idempotency under ${input.concurrency} concurrent requests', a
       ? `// Failure reproduction confirmed: vulnerable fixture observed ${observedEffects} effects (expected <= 1)
   expect(evidence.verdict).toBe('VERIFIED_FAIL');
   expect(evidence.observedEffects).toBeGreaterThan(1);`
-      : `// Verification passing confirmed: fixed fixture observed ${observedEffects} effect (expected <= 1)
+      : verdict === 'VERIFIED_PASS'
+      ? `// At least one real effect committed, and idempotency held.
   expect(evidence.verdict).toBe('VERIFIED_PASS');
-  expect(evidence.observedEffects).toBeLessThanOrEqual(1);`
+  expect(evidence.observedEffects).toBe(1);`
+      : `// No side effect committed: do not claim successful verification.
+  expect(evidence.verdict).toBe('INCONCLUSIVE');
+  expect(evidence.observedEffects).toBe(0);`
   }
 });`;
 }
