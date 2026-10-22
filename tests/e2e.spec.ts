@@ -19,10 +19,13 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     const apiResponse = await request.get('/api/v1/health');
     expect(apiResponse.ok()).toBe(true);
     expect(apiResponse.headers()['cache-control']).toContain('no-store');
-    const sitemapResponse = await request.get('/sitemap.xml');
-    expect(sitemapResponse.ok()).toBe(true);
-    expect(sitemapResponse.headers()['cache-control']).toContain('max-age=3600');
-    expect(sitemapResponse.headers()['cache-control']).not.toContain('no-store');
+    // robots.txt is a real public static asset. Do not require a sitemap
+    // route that the app doesn't expose just to validate cache headers.
+    const robotsResponse = await request.get('/robots.txt');
+    expect(robotsResponse.ok()).toBe(true);
+    expect(await robotsResponse.text()).toContain('User-agent:');
+    expect(robotsResponse.headers()['cache-control']).toContain('max-age=3600');
+    expect(robotsResponse.headers()['cache-control']).not.toContain('no-store');
   });
 
   test('E2E-01: Landing page loads cleanly with honest CTAs and navigation', async ({ page }) => {
