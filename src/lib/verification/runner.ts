@@ -38,7 +38,13 @@ export class VerificationRunner {
     const service =
       input.fixture === 'vulnerable'
         ? new VulnerableRefundService()
-        : new FixedRefundService();
+        : new FixedRefundService({
+            paymentId: input.paymentId,
+            originalAmountMinor: 125000,
+            currency: 'USD',
+            status: 'SETTLED',
+            refundedAmountMinor: 0,
+          });
 
     const targetId =
       input.fixture === 'vulnerable' ? 'refund-vulnerable-v1' : 'refund-fixed-v1';
