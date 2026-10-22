@@ -47,6 +47,20 @@ export class FixedRefundService {
       };
     }
 
+    // Reject invalid identifiers at the domain boundary, including calls that bypass HTTP validation.
+    if (typeof paymentId !== 'string' || !paymentId.trim() ||
+        typeof idempotencyKey !== 'string' || !idempotencyKey.trim()) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment ID and idempotency key are required',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+
     // STEP 1: Check committed ledger for existing result
     const existing = this.ledger.get(idempotencyKey);
     if (existing) {
@@ -88,6 +102,35 @@ export class FixedRefundService {
       return {
         ...activeResult,
         status: activeResult.success ? 'DUPLICATE_IGNORED' : activeResult.status,
+      };
+    }
+
+    // A refund may never be charged to a different payment record. Resolve idempotency
+    // conflicts first, then validate new requests against the actual selected payment.
+    if (paymentId !== this.payment.paymentId) {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment ID does not match the selected payment record',
+        executedAtUtc: new Date().toISOString(),
+      };
+    }
+    if (!Number.isSafeInteger(this.payment.originalAmountMinor) ||
+        this.payment.originalAmountMinor <= 0 ||
+        !Number.isSafeInteger(this.payment.refundedAmountMinor) ||
+        this.payment.refundedAmountMinor < 0 ||
+        this.payment.status === 'REFUNDED') {
+      return {
+        success: false,
+        paymentId,
+        idempotencyKey,
+        amountMinor,
+        status: 'INVALID_STATE',
+        error: 'Payment record is not in a refundable state',
+        executedAtUtc: new Date().toISOString(),
       };
     }
 
