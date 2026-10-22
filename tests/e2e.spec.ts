@@ -1,6 +1,18 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('FlowGuard AI Core User Journey E2E', () => {
+  test('E2E-SEC-01: security headers defend pages and API responses', async ({ request }) => {
+    const pageResponse = await request.get('/');
+    expect(pageResponse.ok()).toBe(true);
+    expect(pageResponse.headers()['x-content-type-options']).toBe('nosniff');
+    expect(pageResponse.headers()['x-frame-options']).toBe('DENY');
+    expect(pageResponse.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    expect(pageResponse.headers()['strict-transport-security']).toContain('max-age=31536000');
+    const apiResponse = await request.get('/api/v1/health');
+    expect(apiResponse.ok()).toBe(true);
+    expect(apiResponse.headers()['cache-control']).toContain('no-store');
+  });
+
   test('E2E-01: Landing page loads cleanly with honest CTAs and navigation', async ({ page }) => {
     await page.goto('/');
 
