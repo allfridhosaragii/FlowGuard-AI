@@ -22,10 +22,16 @@ export class VerificationRunner {
     const timeline: VerificationTimelineEvent[] = [];
 
     // 1. Strict bound checks
+    if (input.fixture !== 'vulnerable' && input.fixture !== 'fixed') {
+      throw new Error('Only explicitly allowlisted verification fixtures are supported');
+    }
+    if (typeof input.paymentId !== 'string' || !input.paymentId.trim()) {
+      throw new Error('Payment ID is required');
+    }
     if (!input.idempotencyKey || input.idempotencyKey.trim().length === 0) {
       throw new Error('Idempotency Key is required');
     }
-    if (input.concurrency < 1 || input.concurrency > 5) {
+    if (!Number.isSafeInteger(input.concurrency) || input.concurrency < 1 || input.concurrency > 5) {
       throw new Error('Concurrency must be between 1 and 5 concurrent asynchronous requests');
     }
     if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor < 1 || input.amountMinor > 1000000) {
