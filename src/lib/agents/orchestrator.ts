@@ -1,4 +1,4 @@
-import { AnalysisResult, StageTrace } from '../schemas/agent-schemas';
+import { AnalysisResult, SourceFetchStatus, StageTrace } from '../schemas/agent-schemas';
 import { RequirementAgent } from './requirement-agent';
 import { RiskHunterAgent } from './risk-agent';
 import { VerificationPlannerAgent } from './verification-agent';
@@ -8,6 +8,8 @@ export interface AnalysisInput {
   businessRule: string;
   sourceType: 'GITHUB_PR' | 'MANUAL_CODE';
   sourceReference: string;
+  // Supplied only by the verified source loader, never inferred from the form.
+  prFetchStatus?: SourceFetchStatus;
   sourceSha?: string;
   codeDiff?: string;
   filePaths?: string[];
@@ -156,6 +158,8 @@ export class AgentOrchestrator {
       runId,
       sourceType: input.sourceType,
       sourceReference: input.sourceReference,
+      selectedPrUrl: input.sourceType === 'GITHUB_PR' ? input.sourceReference : null,
+      prFetchStatus: input.sourceType === 'GITHUB_PR' ? (input.prFetchStatus || 'UNKNOWN') : 'NOT_APPLICABLE',
       sourceSha: input.sourceSha || 'git:latest',
       businessRule: input.businessRule,
       invariants: reqResult.invariants,
