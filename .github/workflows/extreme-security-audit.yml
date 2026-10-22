@@ -54,3 +54,12 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
+          output: codeql-sarif
+      - name: Save CodeQL SARIF findings for triage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif-evidence
+          path: codeql-sarif/
+          if-no-files-found: warn
+          retention-days: 7
