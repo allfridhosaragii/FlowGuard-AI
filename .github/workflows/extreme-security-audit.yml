@@ -1,0 +1,56 @@
+name: Extreme Security Audit (isolated PR)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/extreme-security-audit.yml'
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/extreme-*.test.ts'
+
+permissions:
+  contents: read
+
+jobs:
+  production-dependencies:
+    name: Production dependency advisory audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-fund
+      - name: Fail if high or critical production vulnerabilities are known
+        run: npm audit --omit=dev --audit-level=high
+      - name: Record full development dependency advisory details (informational)
+        shell: bash
+        run: |
+          npm audit --json > "$RUNNER_TEMP/full-npm-audit.json" || true
+          node -e 'const fs=require("fs"); try { const a=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/full-npm-audit.json","utf8")); const v=a.vulnerabilities||{}; console.log("FULL_DEPENDENCY_AUDIT_SUMMARY",JSON.stringify(a.metadata?.vulnerabilities||{})); for(const [name,x] of Object.entries(v)) console.log("FULL_DEPENDENCY_ADVISORY",JSON.stringify({name,severity:x.severity,isDirect:x.isDirect,fixAvailable:x.fixAvailable,via:(x.via||[]).map(y=>typeof y==="string"?y:{name:y.name,title:y.title,url:y.url})})); } catch { console.log("FULL_DEPENDENCY_AUDIT unavailable; production advisory gate remains authoritative"); }'
+
+
+  codeql-javascript:
+    name: CodeQL static security analysis (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze project
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'
