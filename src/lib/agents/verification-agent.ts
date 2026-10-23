@@ -94,7 +94,30 @@ ${JSON.stringify(findings, null, 2)}`;
   }
 
   private static heuristicPlan(findings: RiskFinding[]): VerificationPlan[] {
-    return findings.map((f) => {
+    return findings.map((f): VerificationPlan => {
+      // Plans must follow the finding's domain, not silently reuse refund fixtures.
+      const findingText = [f.why, f.counterexample].join(' ');
+      const isJwtRisk =
+        /\bjwt\b|unsigned\s+tokens?|token\s+signature|alg(?:orithm)?\s*[:=]?\s*['"]?none/i.test(findingText);
+
+      if (isJwtRisk) {
+        return {
+          findingId: f.id,
+          testType: 'AUTH_STATE',
+          fixtureId: undefined,
+          inputVector: {
+            testScenario: 'reject_unsigned_jwt',
+            jwtAlgorithm: 'none',
+            signaturePresent: false,
+            expectedAuthorization: 'DENIED',
+          },
+          expectedEffects:
+            'Authentication must reject unsigned JWTs using alg=none before trusting token claims or granting access. ' +
+            'This is a proposed verification action, not an executed test; a compatible JWT verification harness is not available.',
+          supportState: 'UNSUPPORTED',
+        };
+      }
+
       const isIdempotency = /race|idempot|concurren|refund|double/i.test(f.why);
 
       if (isIdempotency) {
@@ -122,7 +145,7 @@ ${JSON.stringify(findings, null, 2)}`;
           testScenario: 'boundary_and_fuzzing',
           simulatedPayload: 'malformed_input',
         },
-        expectedEffects: 'System safely rejects invalid state transitions without corrupting ledger.',
+        expectedEffects: 'Run isolated domain-appropriate invalid-input checks against the affected target. No compatible executable verification fixture is currently available.',
         supportState: 'UNSUPPORTED',
       };
     });
