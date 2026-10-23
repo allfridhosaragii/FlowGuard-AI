@@ -431,6 +431,14 @@ export default function VerificationLabPage() {
                 </div>
               </div>
 
+              {/* Explicit, qualitative classification for the proven first-party duplicate-refund scenario. */}
+              {evidence.verdict === 'VERIFIED_FAIL' && evidence.observedEffects > evidence.expectedMaxEffects && (
+                <div data-testid="lab-fixture-critical-severity" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs leading-relaxed text-foreground">
+                  <strong>Illustrative Severity: Critical</strong> — a duplicate refund side effect has been observed in this synthetic vulnerable fixture.
+                  This qualitative scenario label is not a calibrated financial loss estimate, and does not imply that an external PR or production payment system was tested.
+                </div>
+              )}
+
               {/* Invariant Explanation */}
               <div className="text-xs space-y-1 text-muted leading-relaxed">
                 <p>
