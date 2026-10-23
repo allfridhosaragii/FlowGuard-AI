@@ -82,7 +82,9 @@ PLAYWRIGHT_BASE_URL=https://flowguard-ai-smoky.vercel.app npx playwright test
 npm run test:watch
 ```
 
-### Test Coverage Breakdown:
+### Historical Test Coverage Breakdown (21 October 2026)
+
+> The per-file counts below document the historical snapshot and are **not** an exhaustive inventory of the newer 118 Vitest / 57 Playwright suite. The current verified aggregate is the [23 October CI run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39985661853).
 - **`tests/model-provenance.test.ts` (20 tests)**:
   - Agent A reports heuristic provenance when neural model returns invalid JSON or empty invariants.
   - Agent B reports heuristic provenance on malformed neural response and retains neural provenance on clean valid output.
