@@ -275,6 +275,20 @@ test.describe('FlowGuard AI Core User Journey E2E', () => {
     });
   });
 
+  test('JWT verification plan clearly distinguishes unsupported proposed checks from executed evidence', async ({
+    page,
+  }) => {
+    await page.goto('/analyze');
+    await page.getByRole('button', { name: /JWT Leak/i }).click();
+    await page.getByRole('button', { name: /Launch Multi-Agent Analysis/i }).click();
+
+    await expect(page.getByText('AUTH_STATE', { exact: true })).toBeVisible();
+    await expect(page.getByText('UNSUPPORTED', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Scope: Proposed verification only/)).toBeVisible();
+    await expect(page.getByText(/no compatible executable fixture is available/i)).toBeVisible();
+    await expect(page.getByText(/Scope: Executes against first-party/)).toHaveCount(0);
+  });
+
   test('E2E-10: Context Isolation — JWT preset -> Clear Code -> arithmetic snippet -> Launch Analysis does NOT leak INV-AUTH-001', async ({
     page,
   }) => {

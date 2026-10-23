@@ -771,7 +771,9 @@ export default function AnalysisWorkspacePage() {
                         {plan.expectedEffects}
                       </p>
                       <span className="text-[10px] text-muted/80 block">
-                        Scope: Executes against first-party reference state machine to benchmark invariant behavior.
+                        {plan.supportState === 'SUPPORTED'
+                          ? 'Scope: This plan can be verified separately using a supported first-party reference fixture in the Controlled Verification Lab. This analysis did not execute it.'
+                          : 'Scope: Proposed verification only. No compatible executable fixture is available in the Controlled Verification Lab, and this action was not executed.'}
                       </span>
                     </div>
 
