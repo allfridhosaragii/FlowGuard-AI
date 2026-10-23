@@ -67,6 +67,28 @@ diff --git a/src/math.ts b/src/math.ts
     expect(res.plans[0].fixtureId).toBe('refund-vulnerable-v1');
   });
 
+  it('Agent C: generates an honest JWT-specific plan instead of refund verification for unsigned tokens', async () => {
+    const res = await VerificationPlannerAgent.plan([], [{
+      id: 'RISK-002',
+      ruleId: 'INV-AUTH-001',
+      severity: 'HIGH',
+      sourcePaths: ['src/auth/jwt-service.ts'],
+      sourceLineRefs: [],
+      why: 'Cryptographic policy accepts unsigned JWT tokens using the "none" algorithm without signature validation.',
+      counterexample: 'An attacker presents an unsigned JWT with admin claims.',
+      status: 'POTENTIAL',
+    }]);
+
+    expect(res.plans).toHaveLength(1);
+    expect(res.plans[0].findingId).toBe('RISK-002');
+    expect(res.plans[0].testType).toBe('AUTH_STATE');
+    expect(res.plans[0].supportState).toBe('UNSUPPORTED');
+    expect(res.plans[0].fixtureId).toBeUndefined();
+    expect(res.plans[0].inputVector.jwtAlgorithm).toBe('none');
+    expect(res.plans[0].expectedEffects).toMatch(/unsigned JWTs|alg=none/);
+    expect(res.plans[0].expectedEffects).not.toMatch(/refund|ledger/i);
+  });
+
   it('Agent C: returns empty plans when findings are empty', async () => {
     const inv = (await RequirementAgent.analyze(sampleRule)).invariants;
     const res = await VerificationPlannerAgent.plan(inv, []);
@@ -222,6 +244,9 @@ export function verifyToken(req, res, next) {
       expect(result.findings.length).toBeGreaterThanOrEqual(1);
       expect(result.findings[0].id).toBe('RISK-002');
       expect(result.invariants[0].id).toBe('INV-AUTH-001');
+      expect(result.plans[0].testType).toBe('AUTH_STATE');
+      expect(result.plans[0].supportState).toBe('UNSUPPORTED');
+      expect(result.plans[0].expectedEffects).toMatch(/JWT|alg=none/);
     });
   });
 });
