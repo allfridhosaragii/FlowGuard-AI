@@ -7,6 +7,8 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
   const [evidence, setEvidence] = useState<ScenarioAuditEvidence | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const isDeadlock = scenario === 'sql-deadlock';
   const label = isDeadlock ? 'SQL Deadlock' : 'Normal Healthy Stream';
@@ -15,6 +17,8 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
     setLoading(true);
     setError(null);
     setEvidence(null);
+    setCopied(false);
+    setCopyFailed(false);
     try {
       const response = await fetch('/api/v1/lab/scenario', {
         method: 'POST',
@@ -33,6 +37,44 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
     } finally {
       setLoading(false);
     }
+  };
+
+
+  const copyAssertion = async () => {
+    if (!evidence?.runnableAssertion) return;
+    const assertion = evidence.runnableAssertion;
+
+    // Prefer the secure Clipboard API. Fall back for browser contexts where
+    // clipboard permissions are restricted (including some test runners).
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(assertion);
+      setCopied(true);
+      setCopyFailed(false);
+      return;
+    } catch {
+      let textarea: HTMLTextAreaElement | null = null;
+      try {
+        textarea = document.createElement('textarea');
+        textarea.value = assertion;
+        textarea.readOnly = true;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        if (document.execCommand('copy')) {
+          setCopied(true);
+          setCopyFailed(false);
+          return;
+        }
+      } catch {
+        // Failed fallback must never be reported as a successful copy.
+      } finally {
+        textarea?.remove();
+      }
+    }
+    setCopied(false);
+    setCopyFailed(true);
   };
 
   return (
@@ -104,7 +146,20 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
             </ol>
           </div>
           <div>
-            <h4 className="font-bold text-sm mb-2">TestSprite Runnable Assertion</h4>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+              <h4 className="font-bold text-sm">TestSprite Runnable Assertion</h4>
+              <button
+                type="button"
+                data-testid="scenario-copy-assertion"
+                onClick={copyAssertion}
+                aria-label={copied ? 'Assertion copied to clipboard' : 'Copy TestSprite Runnable Assertion'}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {copied ? 'Copied' : 'Copy Assertion'}
+              </button>
+            </div>
+            {copied && <p role="status" className="mb-2 text-xs text-success">Assertion copied to clipboard.</p>}
+            {copyFailed && <p role="alert" className="mb-2 text-xs text-danger">Copy failed. Select the assertion code and copy it manually.</p>}
             <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words bg-surface-muted border border-border rounded-lg p-4 overflow-auto">{evidence.runnableAssertion}</pre>
           </div>
           <p className="text-xs text-muted" data-testid="scenario-scope-limitation">
