@@ -104,7 +104,16 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
 
       {!evidence && !loading && !error && (
         <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">
-          Scenario audit standing by. Execute the selected preset to produce real fixture evidence.
+          <div className="space-y-3 text-left" data-testid="scenario-trace-preview">
+            <h3 className="font-bold text-foreground">Trace Preview — {label}</h3>
+            <p className="text-warning font-medium">NOT EXECUTED. This is a fixture description, not observed evidence.</p>
+            {isDeadlock ? (
+              <p>Potential lock trace: TX_A requests payments then ledger; TX_B requests ledger then payments. Click Run SQL Deadlock Audit to observe the actual wait-for cycle.</p>
+            ) : (
+              <p>Sample stream trace: evt-001, evt-002, evt-003. Click Run Healthy Stream Audit to measure accepted event order and detect anomalies.</p>
+            )}
+            <p>Scenario audit standing by. Execute the selected preset to produce real fixture evidence.</p>
+          </div>
         </div>
       )}
 

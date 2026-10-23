@@ -17,6 +17,7 @@ import {
   SplitSquareHorizontal,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ProposedAssertionPanel } from '@/components/ProposedAssertionPanel';
 import { AnalysisResult } from '@/lib/schemas/agent-schemas';
 import { detectDomain } from '@/lib/agents/requirement-agent';
 
@@ -695,6 +696,19 @@ export default function AnalysisWorkspacePage() {
                 ))}
               </div>
 
+              {/* Qualitative severity is grounded in the actual identified findings, not a fabricated numeric score. */}
+              {result.findings.length > 0 && (
+                <div data-testid="analysis-qualitative-severity" className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-foreground">
+                  <strong>Highest Identified Risk Severity:</strong>{' '}
+                  {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const).find(
+                    (severity) => result.findings.some((finding) => finding.severity === severity)
+                  ) || 'UNKNOWN'}
+                  <p className="mt-1 text-[11px] text-muted">
+                    Qualitative severity of a POTENTIAL finding based on the supplied code. No calibrated numeric risk score or external execution proof is claimed.
+                  </p>
+                </div>
+              )}
+
               {/* Risk Findings (Agent B) */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -790,6 +804,9 @@ export default function AnalysisWorkspacePage() {
                   </div>
                 ))}
               </div>
+
+              {/* Suggested assertion is explicitly scoped and is not executed here. */}
+              <ProposedAssertionPanel key={result.runId} plans={result.plans} />
 
               {/* Notes & Guarantees */}
               <div className="p-3 rounded-lg bg-surface-muted/60 border border-border/80 text-[11px] text-muted space-y-1">
