@@ -60,7 +60,7 @@ export function buildProposedAssertion(plan?: VerificationPlan): ProposedAsserti
         "  // The expected result is rejection (HTTP 401 or 403).",
         "  // No request is sent by this deliberately skipped template.",
         "  void request;",
-        "  expect([401, 403]).toContain(401); // Placeholder, NOT a security check.",
+        "  // After a real endpoint is integrated, assert: expect(response.status()).toBe(401);",
         "});",
       ].join('\n'),
     };
