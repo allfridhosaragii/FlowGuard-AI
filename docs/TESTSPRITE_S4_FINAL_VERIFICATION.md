@@ -40,8 +40,29 @@ These results were observed in a complete TestSprite production regression run. 
 
 ## Pull Request Automation Verification
 
-The TestSprite GitHub integration is configured for pull request events. Previous activity includes skipped events, so automatic execution on current PR previews must be independently verified.
+TestSprite successfully triggered an automated test run for GitHub PR #13 against the Vercel preview deployment.
 
-This documentation update supports a dedicated integration-validation pull request. Record the actual TestSprite PR result after the trigger runs successfully.
+### PR #13 Test Results
+- Total: 97
+- Passed: 2
+- Failed: 2
+- Blocked: 93
+
+The test run was affected by Vercel Authentication, which prevented automated access to the protected preview deployment.
+
+The preview was subsequently made accessible and successfully opened in an unauthenticated browser session.
+
+A complete TestSprite rerun could not be performed because the remaining credits were insufficient.
+
+The production regression result of 97/97 Passed remains valid independently and must not be represented as a successful PR-preview test run.
+
+### Additional CI Verification
+- Vitest: 118/118 Passed
+- Playwright: 57/57 Passed
+- TypeScript, Next.js build, and GitHub Actions checks completed successfully.
+
+Both TestSprite automation triggers are currently disabled to prevent additional credit-consuming runs.
+
+The temporary Vercel deployment protection exception for the s4-final preview has been removed.
 
 **Principle:** Evidence precedes verdicts.
