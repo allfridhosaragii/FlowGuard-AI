@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ScenarioAuditPanel } from '@/components/ScenarioAuditPanel';
+import type { ScenarioName } from '@/lib/verification/scenario-runner';
 import {
   FlaskConical,
   Play,
@@ -18,6 +20,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { VerificationEvidence } from '@/lib/verification/evidence';
 
 export default function VerificationLabPage() {
+  const [scenario, setScenario] = useState<'payment' | ScenarioName>('payment');
   const [fixture, setFixture] = useState<'vulnerable' | 'fixed'>('vulnerable');
   const [concurrency, setConcurrency] = useState<number>(2);
   const [paymentId, setPaymentId] = useState<string>('pay_demo_001');
@@ -114,6 +117,17 @@ export default function VerificationLabPage() {
   };
 
   return (
+    <>
+      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 pt-8 space-y-3" aria-label="Risk Simulator Presets">
+        <h2 className="text-xs font-bold tracking-wider uppercase text-accent">Risk Simulator Presets</h2>
+        <p className="text-xs text-muted">Choose a real first-party fixture. Additional SQL and stream scenarios are synthetic and explicitly scoped.</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Select audit preset">
+          <button type="button" aria-pressed={scenario === 'payment'} onClick={() => setScenario('payment')} className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-accent">Payment Concurrency</button>
+          <button type="button" aria-pressed={scenario === 'sql-deadlock'} onClick={() => setScenario('sql-deadlock')} className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-accent">SQL Deadlock</button>
+          <button type="button" aria-pressed={scenario === 'healthy-stream'} onClick={() => setScenario('healthy-stream')} className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-accent">Normal Healthy Stream</button>
+        </div>
+      </section>
+      {scenario === 'payment' ? (
     <div className="py-10 px-4 sm:px-6 max-w-[1160px] mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-2">
@@ -524,5 +538,9 @@ export default function VerificationLabPage() {
         </div>
       </div>
     </div>
+      ) : (
+        <ScenarioAuditPanel key={scenario} scenario={scenario} />
+      )}
+    </>
   );
 }
