@@ -4,13 +4,16 @@
 > *Don't just review code. Prove it works.*  
 > Built for **TestSprite Hackathon Season 4**.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
 [![Build Status](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-78%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-43%20Passing-success)](tests/e2e.spec.ts)
+[![Vitest](https://img.shields.io/badge/Vitest-118%20Passing-success)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-57%20Passing-success)](tests/e2e.spec.ts)
 
-🔗 **Live Production URL (latest submission build)**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
+> **Season 4 pre-submission status — 24 October 2026: NOT ready to submit.** Organizer Discord extended the deadline to **26 October 2026, 11:59 PM Pacific** (= **27 October 2026, 13:59 WIB**), with submission in Discord `#hackathon-s4-submissions`, **not Devpost**. [CI run 39985661853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39985661853) passed **118 Vitest + 57 Playwright**. Historical TestSprite **production** verification passed **97/97**, but **PR #13 preview** recorded **2 passed, 2 failed, 93 blocked**. The [required-check ruleset](https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816) remains **Disabled** and the two TestSprite triggers were last seen Disabled. See the [current evidence-first audit](docs/HACKATHON-SEASON-4-SUBMISSION.md). Do not interpret a passed production suite as a passed PR suite.
+
+> **License status:** The previous README advertised MIT without a repository `LICENSE` file. Licensing remains undecided until the owner explicitly chooses and publishes it.
+
+🔗 **Canonical production URL (anonymous-access check pending)**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
 
 **Alternative feature-branch preview**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/). The canonical production website is the URL above. PR #1 is merged into `main`.
@@ -66,10 +69,10 @@ FlowGuard AI supports:
 FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
 
 ```bash
-# 1. Run all 78 Vitest unit & integration tests:
+# 1. Run the Vitest suite (118 passed in CI on 23 October 2026):
 npm test
 
-# 2. Run all 43 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
+# 2. Run the Playwright suite (57 passed in CI on 23 October 2026):
 npx playwright test
 
 # 3. (Optional) Run Playwright directly against the live production deployment:
@@ -140,18 +143,18 @@ npm run test:watch
 
 ---
 
-## ✅ Verified Test Evidence — 21 October 2026
+## ✅ Historical test evidence — 21 October 2026 (superseded by newer CI)
 
 - **GitHub Actions**: [run 39527734853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39527734853) — 78 Vitest tests passed, 43 Playwright browser tests passed, TypeScript and build passed, ESLint 0 errors (24 warnings).
-- **TestSprite V3**: [latest PR #1 automated execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/4b812fc5-c9f8-4c63-b387-b1e1567df655) — **22 passed, 0 failed, 1 blocked**. The blocked case requests a 390×844 mobile viewport; its exported runner script does not show a mobile viewport setup. This is **unresolved test execution coverage**, not a passed mobile TestSprite assertion. Independent Playwright mobile emulation at 390×844 is covered by CI.
+- **TestSprite V3**: [historical PR #1 automated execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/4b812fc5-c9f8-4c63-b387-b1e1567df655) — **22 passed, 0 failed, 1 blocked**. The 390×844 mobile TestSprite case was blocked; TestSprite support later clarified the viewport was not configured at project/test-case level. This is **not** a passed TestSprite mobile assertion. Independent Playwright mobile emulation at 390×844 is covered by CI.
 - **Automated verification loop**: [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) documents TestSprite PR feedback and GitHub Actions; [Codex audit PR #2](https://github.com/allfridhosaragii/FlowGuard-AI/pull/2) was independently reviewed and merged into the feature branch.
 
 ---
 
 ## 📑 Hackathon Documentation & Evidence Reports
 
-- 📄 **[Hackathon Season 4 Submission & Audit Report](docs/HACKATHON-SEASON-4-SUBMISSION.md)**: Full architecture breakdown, test suite matrices, TestSprite 22 Passed / 0 Failed / 1 Blocked analysis, security audit, and step-by-step submission checklist.
-- 📄 **[TestSprite Merge Gate & Evidence Document](docs/TESTSPRITE-GATE-AND-EVIDENCE.md)**: Transparent technical details on the TestSprite remote runner mobile viewport limitation, CI automation logs, and merge gate decisions.
+- 📄 **[Hackathon Season 4 Submission & Audit Report](docs/HACKATHON-SEASON-4-SUBMISSION.md)**: Current evidence-first submission readiness report; clearly separates production results, PR previews and unresolved merge-gate requirements.
+- 📄 **[TestSprite Merge Gate & Evidence Document](docs/TESTSPRITE-GATE-AND-EVIDENCE.md)**: Historical CI/TestSprite findings; consult the current readiness report for corrected viewport diagnosis and merge-gate status.
 - 📸 **[Photographic Viewport Evidence](docs/screenshots/)**: 19 full-page screenshot artifacts validating 0 horizontal overflow, real touch interactions, and responsive user flows on 5 screen sizes down to 320px width.
 
 ---
@@ -184,7 +187,7 @@ npm run build
 
 - **No Arbitrary Execution**: External repository code is NEVER executed on the application server. The Verification Lab runs exclusively on allowlisted first-party synthetic fixtures.
 - **Evidence Precedes Verdicts**: AI findings for external PRs are strictly classified as `POTENTIAL`. Verdicts (`VERIFIED_PASS` or `VERIFIED_FAIL`) are reserved strictly for executed tests.
-- **Dynamic Provenance**: Verification evidence logs the live commit SHA (`git rev-parse HEAD`), fixture identity, and execution timestamps.
+- **Dynamic Provenance**: Verification evidence records deployment-supplied `VERCEL_GIT_COMMIT_SHA` or `GIT_COMMIT_SHA` when present (otherwise a package-version fallback), fixture identity, and execution timestamps.
 - **Read-Only GitHub REST**: All PR inspections are strictly read-only with enforced diff size caps (200 KB max).
 
 ---
@@ -194,7 +197,7 @@ npm run build
 1. **Install TestSprite GitHub App**:
    - Navigate to [TestSprite Console](https://www.testsprite.com/) and install the TestSprite GitHub App for `allfridhosaragii/FlowGuard-AI`.
 2. **Pull Request Workflow**:
-   - Each PR opened against `main` automatically triggers Vercel Preview Deployments and TestSprite automated regression runs.
+   - When enabled and correctly configured, TestSprite PR triggers can test matching accessible previews. **On the 24 October screenshots, both TestSprite triggers were Disabled.** Do not assume every new PR currently runs TestSprite.
 3. **Assertions**:
    - TestSprite 3.0 can execute assertions directly against the `/api/v1/lab/verify` endpoint to validate state machine invariants.
 
@@ -206,4 +209,4 @@ npm run build
 - GitHub: [@allfridhosaragii](https://github.com/allfridhosaragii)  
 - Email: pedoprimasaragi@gmail.com  
 - Event: **TestSprite Hackathon Season 4**
-- Branch & PR: `feat/testsprite-s4-hardening` (PR #1)
+- Historical [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) and [PR #13](https://github.com/allfridhosaragii/FlowGuard-AI/pull/13) are merged. No project submission is verified.
