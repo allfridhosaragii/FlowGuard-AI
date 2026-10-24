@@ -115,3 +115,12 @@ An escalation to TestSprite support and the organizer has been sent by the parti
 - Do not alter `main`, merge PRs, enable TestSprite triggers, spend credits, change Vercel protection, activate GitHub rulesets, or post the Discord submission as a side effect of editing these docs.
 - Documentation edits should first be isolated in a separate branch. Creation of a branch/commit may itself trigger Vercel deployment depending on configured hooks; review activity afterwards.
 - If the project has already been officially submitted and subsequent changes are prohibited, freeze all changes and use read-only inspection.
+
+## 9. Controlled PR #14 live-trigger verification
+
+> **Status at commit time:** Verification in progress; **not** a passing TestSprite result, a verified GitHub merge block, or submission approval.
+
+- Intent: use this documentation-only commit on draft PR #14 to generate a **real Vercel preview event** for the enabled TestSprite `vercel[bot] PR comment` trigger; do not use `Send Test Event`, which TestSprite Support confirmed can overwrite genuine failing statuses with `success`.
+- Target: the existing public `docs-15dd3a` Vercel preview for this PR; `Run on drafts too` and TestSprite `Merge gate` were enabled by the owner. The separate older Vercel commit-status trigger remains disabled.
+- Required evidence after the event: Vercel deployment readiness, an actual matching Vercel comment, an attributable PR-scoped TestSprite execution, and the resulting GitHub commit status. A GitHub ruleset set to `Disabled` **cannot** itself prove merge blocking.
+- Do not infer pass/fail totals, credits consumed, or successful PR enforcement from trigger configuration alone. Do not merge or submit without explicit owner approval.
