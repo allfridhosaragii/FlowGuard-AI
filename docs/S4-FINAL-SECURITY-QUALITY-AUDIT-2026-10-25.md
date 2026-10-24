@@ -46,10 +46,16 @@ The official GitHub advisory lists \`zod <4.6.6\` as affected and 4.6.6 as the f
 | Natural keyboard, Chromium/Firefox/WebKit over local HTTPS | **21/21 PASS** |
 | Next.js production build, original CSP | PASS |
 
-Additional read-only production & PR preview smoke and post-fix Trivy are implemented in:
-https://github.com/allfridhosaragii/FlowGuard-AI/actions/workflows/s4-postfix-final-quality.yml
+**Post-fix release-candidate verification also PASSED (separate read-only workflow):**
+https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40119022190
 
-Its completion result must be checked separately. The isolated Zod workflow's success must not be extrapolated to a paid TestSprite PR run.
+- Production **and** PR #14 preview: 10/10 anonymous GET endpoints returned HTTP 200, with the actual FlowGuard AI app rather than a Vercel login page, valid health JSON, CSP and X-Content-Type-Options headers.
+- Security candidate: committed package and lockfile both resolve Zod **4.6.7**, and a fresh **npm ci** from that committed lockfile passed.
+- Fresh `npm audit --omit=dev --audit-level=high`: **0 vulnerabilities**.
+- Fresh Trivy vulnerability scanner: **0 HIGH/CRITICAL** results in the uploaded JSON artifact `s4-postfix-high-critical-scan` (artifact 12570137924; target `package-lock.json`), with `exit-code: 1` so a finding would fail CI. Unlike the earlier permissive Trivy workflow, this verifies the new candidate with a hard gate.
+- This smoke checks the already-live, **unpatched** main production and PR preview. It does **not** claim Zod4 is deployed on either URL.
+
+The isolated Zod workflow's success must not be extrapolated to a paid TestSprite PR run.
 
 ## 3. Current TestSprite competition evidence
 
@@ -116,7 +122,7 @@ Published judging rubric: project quality 40, self-running test coverage 40, inn
 ## 6. Final controlled release gates
 
 1. Confirm this security candidate has a committed SHA, replayable package lock and green isolated CI.
-2. Confirm read-only production/PR preview smoke and post-fix Trivy report. Preserve the exact URLs, environment, dates and build SHA.
+2. Read-only production/PR preview smoke and fresh post-fix Trivy are now **verified green** in run 40119022190. Preserve the exact URLs, environment, dates and build SHA.
 3. Keep PR #14 Draft and \`main\` unchanged while the TestSprite trigger is Active. Pushing the dependency fix onto PR #14 could automatically spend testing credits. Do not merge or rerun TestSprite without a separate bounded owner approval.
 4. Record final official TestSprite/organizer response. Green TestSprite status may be claimed only if a genuine new result verifies it; an outstanding Blocked case remains disclosed.
 5. Prepare submission links and optional demo from verified artifacts; post to Discord only after owner explicitly approves the final text and destination.
