@@ -1,0 +1,122 @@
+name: S4 Zod4 Security Upgrade & Full Offline Regression (No TestSprite)
+
+on:
+  push:
+    branches:
+      - security/s4-zod4-final-audit-20261025
+    paths:
+      - .github/workflows/s4-zod4-finalize.yml
+
+concurrency:
+  group: s4-zod4-final-audit-only
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout security-only branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked original dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Upgrade Zod only and regenerate committed lockfile
+        run: |
+          npm install zod@4.6.7 --save-exact --no-fund --no-audit
+          node -e 'const p=require("./package.json"),lock=require("./package-lock.json"); if(p.dependencies.zod!=="4.6.7" || lock.packages["node_modules/zod"].version!=="4.6.7") process.exit(1); console.log("ZOD_VERSION_AND_LOCK_MATCH_4_6_7");'
+      - name: Apply three previously verified Zod4 API compatibility fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          edits = {
+            'src/app/api/v1/analyses/route.ts': [('validated.error.errors[0]', 'validated.error.issues[0]')],
+            'src/app/api/v1/lab/verify/route.ts': [('validated.error.errors[0]', 'validated.error.issues[0]')],
+            'src/lib/schemas/agent-schemas.ts': [('inputVector: z.record(z.any())', 'inputVector: z.record(z.string(), z.any())')]
+          }
+          for name, subs in edits.items():
+              path = Path(name)
+              code = path.read_text(encoding="utf-8")
+              for original, updated in subs:
+                  assert code.count(original) == 1, f"Expected one exact match for {original} in {name}"
+                  code = code.replace(original, updated)
+              path.write_text(code, encoding="utf-8")
+              print("VERIFIED_ZOD4_API_PATCH", name)
+          PY
+          git diff --stat
+      - name: Assert npm ci reproducibility from new lockfile
+        run: npm ci --no-fund --no-audit
+      - name: Production dependency advisory check
+        run: npm audit --omit=dev --audit-level=high
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: ESLint
+        run: npm run lint
+      - name: All Vitest tests
+        run: npm test
+      - name: Build production Next.js
+        run: npm run build
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run complete Chromium Playwright suite
+        env:
+          CI: 'true'
+        run: npx playwright test --config=playwright.audit.config.ts --workers=1 --retries=0
+      - name: Start local production HTTPS with unchanged CSP
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout /tmp/fg-s4-zod4-key.pem -out /tmp/fg-s4-zod4-cert.pem \
+            -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/fg-s4-zod4-next.log 2>&1 &
+          export UX002_TLS_KEY=/tmp/fg-s4-zod4-key.pem UX002_TLS_CERT=/tmp/fg-s4-zod4-cert.pem
+          node scripts/ux002-tls-proxy.mjs > /tmp/fg-s4-zod4-proxy.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -k -fsS https://localhost:3443/api/v1/health > /dev/null; then
+              echo "ZOD4_TLS_APP_READY"
+              break
+            fi
+            sleep 2
+          done
+          curl -k -fsS https://localhost:3443/api/v1/health
+      - name: All 21 keyboard tests on Chromium Firefox WebKit
+        env:
+          PLAYWRIGHT_BASE_URL: https://localhost:3443
+        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Commit security fix only after all validations pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const p=require("./package.json"); if(p.dependencies.zod!=="4.6.7") process.exit(1)'
+          git diff --name-only | sort > /tmp/s4-zod4-changed
+          printf 'package-lock.json\npackage.json\nsrc/app/api/v1/analyses/route.ts\nsrc/app/api/v1/lab/verify/route.ts\nsrc/lib/schemas/agent-schemas.ts\n' | sort > /tmp/s4-zod4-expected
+          diff -u /tmp/s4-zod4-expected /tmp/s4-zod4-changed
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json src/app/api/v1/analyses/route.ts src/app/api/v1/lab/verify/route.ts src/lib/schemas/agent-schemas.ts
+          git commit -m 'fix(security): pin Zod 4.6.7 with tested API compatibility'
+          git push origin HEAD:refs/heads/security/s4-zod4-final-audit-20261025
+          echo "ZOD4_SECURITY_PATCH_COMMITTED_TO_ISOLATED_BRANCH_ONLY"
+      - name: Upload regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-zod4-security-fix-isolated-evidence
+          path: |
+            test-results/
+            playwright-report/
+            /tmp/fg-s4-zod4-next.log
+            /tmp/fg-s4-zod4-proxy.log
+          retention-days: 7
