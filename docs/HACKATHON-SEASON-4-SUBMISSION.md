@@ -53,7 +53,7 @@ Because PR #14 is **Draft**, it also cannot merge for that independent reason. W
 - SQL deadlock and healthy stream are synthetic first-party models. Arbitrary external PR code is **not** executed on the server.
 - Production neural inference is off by default; heuristic attribution is transparently disclosed. No assertion of trained-neural findings when `aiModelConfigured:false`.
 - Runtime lockfile: Next.js **15.5.28**, React/React DOM **19.3.1**, Sharp **0.35.5**, aligned with October 2026 patch advisories.
-- Latest available production npm audit: **0 reported** vulnerabilities on Oct 23. Full npm audit: **12 dev/build-related advisory chains** (3 moderate, 7 high, 2 critical).
+- **LATEST production audit (24 Oct)**: **1 HIGH security advisory in locked Zod 3.x** (GHSA-mrhx-c7xc-m3w5), detected by `npm audit --omit=dev --audit-level=high` in [isolated audit run 40091205910](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091205910). Prior **23 Oct** scan reported **0**. The earlier full dev/build audit reported **12 advisory chains** (3 moderate, 7 high, 2 critical). Do not claim production dependencies currently have zero advisories. Existing bounded JSON streams and the public input `filePaths.max(30)` constrain the documented oversized-collection attack in those routes, but other internal output schemas have unbounded arrays; remediation review is outstanding.
 - Semgrep **18 findings**, despite scan step being non-blocking. ZAP localhost passive **60 PASS / 1 WARN / 0 FAIL**, warning about CSP `unsafe-inline`. Trivy `exit-code: '0'` so its green status is **not** proof of zero findings.
 - Byte-bounded JSON input and Zod validation exist; public API per-IP abuse throttling is **not verified**. CSP inline allowances and mutable Actions references need later hardening.
 - No root LICENSE exists; do not advertise MIT without owner publishing a license.
@@ -77,7 +77,7 @@ Use [honest four-minute demo runbook](DEMO-RUNBOOK-S4-2026-10-24.md), [verificat
 - [ ] Confirm actual pinned Discord channel and organizer's final deadline extension.
 - [ ] Confirm precise **TestSprite account email and display name**; GitHub account contact email cannot substitute without confirmation.
 - [ ] Confirm current credits after recent full suite, not the pre-run balance.
-- [ ] Decide and publish a software license only if owner approves; don't invent MIT/Apache licensing.
+- [x] No unsupported MIT/Apache license claim in the corrected README. A standalone license is **not listed as a mandatory Project Track submission requirement** on the official event page; publishing any license is an optional owner choice.
 - [ ] Validate dynamic target URL behavior across PRs if claiming every new PR automatically tests correctly.
 - [ ] Decide whether to merge documentation changes after passing Required tests. This audit branch is isolated; PR #14 and `main` must remain untouched without permission.
 - [ ] Owner expressly authorizes the **exact** Discord post and acknowledges its verified limits.

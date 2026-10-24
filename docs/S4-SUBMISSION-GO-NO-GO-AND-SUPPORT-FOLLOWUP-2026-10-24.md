@@ -53,9 +53,12 @@ The message supplied:
 | Correct live pinned Discord channel | Confirmed organizer message in the actual Discord | **UNVERIFIED** |
 | TestSprite account display name and email | Matched to account used for the TestSprite suite | **UNVERIFIED** |
 | Credits for any vendor-requested rerun | Balance and exact scope confirmed, explicit owner authority | **NOT CONFIRMED** |
-| Software license claims | No unsupported MIT/Apache claims without an actual LICENSE | **YES (no badge/claim)** |
+| Software license claims | No unsupported MIT/Apache claims without an actual LICENSE; **a license file is not a mandatory Project Track submission item** | **YES (no badge/claim)** |
+| **Current dependency security** | Latest production audit triaged, substantive High advisories resolved or explicitly risk-accepted with evidence | **OPEN: 24 Oct `npm audit --omit=dev` found one High Zod advisory, GHSA-mrhx-c7xc-m3w5** |
 | Optional video | Only link an actually captured/public video if available | **NO VIDEO — optional** |
 | Final authorization | Owner has approved the exact Discord post, links, and remaining disclosures | **NOT GIVEN** |
+
+**24 Oct new security audit note:** [isolated run 40091205910](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091205910) confirmed one High production Zod vulnerability (`<4.6.6`; major-version migration required). Existing public 4/16/64 KiB request limits and `.max(30)` public filePaths constrain the documented massive-array memory consumption, but do not remove the advisory. A tested Zod v4 migration is outstanding. There is no evidence of actual exploitation.
 
 **Operational decision:** Preserve PR #14 Draft, preserve its real failure, do not activate a second trigger, and do not rerun vendor tests without a vendor-supported reason plus authorized credit budget. A functioning 6/6 Playwright keyboard test is strong evidence, but not a TestSprite pass or WCAG certification.
 

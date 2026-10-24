@@ -17,7 +17,8 @@ All links below are evidence by scope. **Do not equate production 97/97 with the
 | Actual-Tab keyboard test source | https://github.com/allfridhosaragii/FlowGuard-AI/blob/audit/keyboard-natural-tab-20261024/tests/keyboard-natural-tab-audit.spec.ts | No forced focus/click/fill |
 | Keyboard trace/screenshot artifact | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821/artifacts/12555251397 | 7-day retention, preserve before expiry if needed |
 | Main Ruleset | https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816 | Active protection, failed TestSprite Required check |
-| Production dependency/CodeQL audit | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39952366285 | Production-only audit 0; full audit 12 advisories; CodeQL completed |
+| **Latest production npm audit** | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091205910 | **24 Oct: 1 HIGH Zod GHSA-mrhx-c7xc-m3w5**. Browser 6/6 and hosted GET 10/10 still pass; audit step failure is genuine |
+| Historical production dependency/CodeQL audit | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39952366285 | **23 Oct** production-only audit had 0 then; full audit 12 dev/build advisories; superseded by new Zod advisory |
 | Semgrep/Trivy/ZAP toolbox audit | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459319 | Semgrep 18; ZAP WARN CSP; Trivy nonblocking |
 | Historical PR #13 | https://github.com/allfridhosaragii/FlowGuard-AI/pull/13 | Protected-preview access failure history |
 | Official Season 4 rules | https://www.testsprite.com/hackathon-s4 | Rubric 40/40/20, required PR, live site and TestSprite name/email; stale posted deadline/channel |

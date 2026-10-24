@@ -18,7 +18,9 @@ Sources: [Next.js 14 October security release](https://nextjs.org/blog/nextjs-se
 
 A 23 Oct `npm audit --omit=dev --audit-level=high` recorded **0 production vulnerabilities**. That run's full `npm audit` listed **12 vulnerabilities/advisory chains: 3 moderate, 7 high, 2 critical** largely through development tooling such as Vitest/tinypool, Tailwind and ESLint dependencies. These advisory severities must be disclosed but **must not automatically be characterized as exploitable production RCE**. Status is time-bound; package advisories can change after Oct 23.
 
-**Decision:** retain the patched runtime versions, avoid major toolchain migration days before deadline, and separately assess build/test dependency advisory paths with compatible upgrades and isolated CI tests after owner approval.
+**NEW HIGH production advisory (24 Oct):** [GitHub Actions run 40091205910](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091205910) ran `npm audit --omit=dev --audit-level=high` against the committed dependency lockfile and **FAILED**: `zod <4.6.6`, advisory **GHSA-mrhx-c7xc-m3w5**, one HIGH severity dependency finding. The npm suggestion is `zod@4.6.7`, which is a **breaking upgrade from committed Zod 3.x**. [Upstream advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) describes potential excessive memory consumption during validation of large malformed collections. Current public endpoints impose streaming body byte limits of 4/16/64 KiB and the public `filePaths` Zod array uses `.max(30)`, substantially bounding this particular input path; internal `agent-schemas.ts` has some arrays without `.max`. No actual exploit against this deployment has been reproduced. This audit does **not** claim the high advisory is resolved or irrelevant. No `npm audit fix --force`, untested Zod upgrade, source push to `main`, or paid TestSprite rerun was performed.
+
+**Decision:** keep Next.js/React/Sharp patched versions, plan an **isolated Zod v4 compatibility migration**, audit all `z.array/z.map/z.set` schemas and preserve validation error/API semantics. The new High finding now takes precedence over earlier 23 Oct claims of zero production advisories. No high-risk breaking dependency upgrade should reach the submission branch without full TypeScript, lint, Vitest, Playwright and protected required-check evidence. Separately triage the 12 previously reported full/dev advisories.
 
 ## 3. API/data isolation and cost controls
 
@@ -63,7 +65,8 @@ Remaining limitations:
 | **P1** | Semgrep 18 and workflow mutable references | Triage detailed JSON; non-blocking scanner green != zero findings |
 | **P1** | Temporary PR preview deployment protection exception | Remove only when PR testing no longer requires it |
 | **P2** | CSP nonce-based mitigation | Separate tested hardening; hydration compatibility |
-| **P2** | 12 full/dev advisory chains | Time-bound dependency review, not asserted production vulnerability |
+| **P0/P1** | **Zod production GHSA-mrhx-c7xc-m3w5 (24 Oct), 1 High** | **OPEN**: bounded public inputs reduce risk, but migrate/test Zod 4.6.6+ in isolation before declaring clean |
+| **P2** | 12 historical full/dev advisory chains | Time-bound dependency review, not asserted production vulnerability |
 | **P2** | License choice | Owner decision |
 | **P2** | GitHub fetch request timeout/budget and aria-tab semantics | Separate regression-tested quality improvements |
 
