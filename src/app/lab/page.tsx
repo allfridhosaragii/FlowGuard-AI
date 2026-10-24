@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ScenarioAuditPanel } from '@/components/ScenarioAuditPanel';
 import type { ScenarioName } from '@/lib/verification/scenario-runner';
 import {
@@ -28,6 +28,7 @@ export default function VerificationLabPage() {
   const [amountMinor, setAmountMinor] = useState<number>(125000);
   const [payloadMode, setPayloadMode] = useState<'same_amount' | 'differing_amount'>('same_amount');
 
+  const inFlightVerificationRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [evidence, setEvidence] = useState<VerificationEvidence | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,9 @@ export default function VerificationLabPage() {
   const [copyFailed, setCopyFailed] = useState(false);
 
   const handleRunVerification = async () => {
+    // aria-disabled preserves keyboard focus, so clicks/Enter must be guarded explicitly.
+    // A ref also prevents two rapid activations before React flushes the loading state.
+    if (inFlightVerificationRef.current) return;
     // Clear stale evidence and prior errors immediately on submit
     setEvidence(null);
     setError(null);
@@ -48,6 +52,7 @@ export default function VerificationLabPage() {
       return;
     }
 
+    inFlightVerificationRef.current = true;
     setLoading(true);
     try {
       const res = await fetch('/api/v1/lab/verify', {
@@ -74,6 +79,7 @@ export default function VerificationLabPage() {
       setError(err instanceof Error ? err.message : 'Unexpected failure while running verification');
       setEvidence(null);
     } finally {
+      inFlightVerificationRef.current = false;
       setLoading(false);
     }
   };
@@ -338,9 +344,10 @@ export default function VerificationLabPage() {
               id="btn-execute-verification"
               data-testid="btn-execute-verification"
               aria-label="Execute Verification Harness"
-              disabled={loading}
+              aria-disabled={loading}
+              aria-describedby="lab-verification-announcement"
               onClick={handleRunVerification}
-              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors aria-disabled:opacity-50 aria-disabled:cursor-progress shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
@@ -355,6 +362,24 @@ export default function VerificationLabPage() {
               )}
             </button>
           </div>
+
+          {/* Stable polite live region: screen readers hear progress/verdict without moving focus. */}
+          <p
+            id="lab-verification-announcement"
+            role="status"
+            aria-label="Lab verification progress"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {loading
+              ? 'Verification in progress'
+              : evidence
+                ? `Verification finished: ${evidence.verdict === 'VERIFIED_PASS' ? 'Verified Pass' : evidence.verdict === 'VERIFIED_FAIL' ? 'Verified Fail' : 'Inconclusive'}`
+                : error
+                  ? 'Verification encountered an error'
+                  : ''}
+          </p>
 
           {error && (
             <div
