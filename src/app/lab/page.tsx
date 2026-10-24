@@ -375,7 +375,7 @@ export default function VerificationLabPage() {
             {loading
               ? 'Verification in progress'
               : evidence
-                ? `Verification finished: ${evidence.verdict === 'VERIFIED_PASS' ? 'Verified Pass' : evidence.verdict === 'VERIFIED_FAIL' ? 'Verified Fail' : 'Inconclusive'}`
+                ? `Verification finished — ${evidence.verdict === 'VERIFIED_PASS' ? 'observed effects remained within the invariant limit' : evidence.verdict === 'VERIFIED_FAIL' ? 'observed effects exceeded the invariant limit' : 'the outcome was inconclusive'}`
                 : error
                   ? 'Verification encountered an error'
                   : ''}

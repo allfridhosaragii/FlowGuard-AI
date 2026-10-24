@@ -65,7 +65,7 @@ test.describe('UX-002 deep keyboard and accessible status audit', () => {
     await expect(button).toBeFocused();
     await expect(button).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByRole('status', { name: 'Lab verification progress' })).toContainText('Verification in progress');
-    await expect(page.getByRole('status', { name: 'Lab verification progress' })).toContainText('Verification finished: Verified Fail');
+    await expect(page.getByRole('status', { name: 'Lab verification progress' })).toContainText('Verification finished — observed effects exceeded the invariant limit');
   });
 
   test('UX002-ASYNC-ANALYZE: Enter activation retains focus and announces completion', async ({ page }) => {
