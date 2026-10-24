@@ -1,248 +1,126 @@
-# FlowGuard AI — Hackathon Season 4 Submission & Audit Report 🛡️
+# FlowGuard AI — TestSprite Hackathon Season 4 | Pre-submission Evidence & Readiness
 
-> **Event**: TestSprite Hackathon Season 4  
-> **Project**: FlowGuard AI — AI-Powered Bug Hunting & Behavioral Risk Detection Platform  
-> **Tagline**: *Don't just review code. Prove it works.*  
-> **Author**: Allfridho Saragi ([@allfridhosaragii](https://github.com/allfridhosaragii))  
-> **Audit Status**: Verified Clean & Production-Ready  
-> **Date**: October 2026  
-
----
-
-## 📌 Executive Summary & Key Links
-
-| Property | Resource / Link | Status |
-|---|---|---|
-| **Live Production Application** | [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/) | 🟢 Active & Deployed |
-| **GitHub Repository** | [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI) | 🟢 Public Repository |
-| **Active Feature Branch** | `feat/testsprite-s4-hardening` | 🟢 Fully Hardened |
-| **Pull Request #1** | [https://github.com/allfridhosaragii/FlowGuard-AI/pull/1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) | 🟢 PR Open & Active |
-| **Vercel Preview Deployment** | [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app) | 🟢 Live Preview Ready |
-| **TestSprite S4 Dashboard** | [TestSprite Execution Dashboard](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/48b828a4-3c0f-4bcb-9cf5-a6135f03996a) | 🟢 22 Passed, 0 Failed, 1 Blocked |
-| **GitHub Actions CI Run** | [Workflow Runs (Commit 9758e39)](https://github.com/allfridhosaragii/FlowGuard-AI/actions) | 🟢 Automated CI (`test-and-verify`) |
-
----
-
-## 🌟 The Core Innovation: Why FlowGuard AI?
-
-### The Problem with Traditional Code Review
-Traditional Pull Request reviews and static linters check syntax, types, and formatting, but miss critical runtime regressions:
-1. **Concurrent Race Conditions**: Two parallel refund requests bypass balance checks and issue duplicate payouts.
-2. **Missing Idempotency**: Network retries execute non-idempotent operations multiple times.
-3. **Hallucinated AI Findings**: Generic LLM code analyzers invent security vulnerabilities without mathematical rigor or code evidence.
-4. **False Confidence**: Static green checks in CI that never execute concurrent requests to verify state machine safety.
-
-### The FlowGuard AI Architecture
-FlowGuard AI bridges the gap between **code review** and **runtime verification**:
-
-```
-+---------------------------------------------------------------------------------+
-|                               FLOWGUARD AI PIPELINE                             |
-+---------------------------------------------------------------------------------+
-|                                                                                 |
-|  [ User PR Diff / Code ] + [ Business Rule / Invariant ]                        |
-|             │                                                                   |
-|             ▼                                                                   |
-|  ┌───────────────────────────────────────────────────────────────────────────┐  |
-|  │ AGENT A: REQUIREMENT ANALYST                                              │  |
-|  │ - Extracts formal mathematical invariants (predicate, scope, assumptions) │  |
-|  │ - Enforces domain context isolation (arithmetic vs auth vs payment)      │  |
-|  │ - Rejects stale rule leakage & flags cross-domain mismatches              │  |
-|  └───────────────────────────────────────────────────────────────────────────┘  |
-|             │                                                                   |
-|             ▼                                                                   |
-|  ┌───────────────────────────────────────────────────────────────────────────┐  |
-|  │ AGENT B: RISK HUNTER                                                      │  |
-|  │ - Strips comments before regex scanning to prevent false positives        │  |
-|  │ - Inspects unified diffs for concurrency gaps and non-atomic mutations   │  |
-|  │ - Classifies all external PR findings strictly as POTENTIAL_RISK          │  |
-|  └───────────────────────────────────────────────────────────────────────────┘  |
-|             │                                                                   |
-|             ▼                                                                   |
-|  ┌───────────────────────────────────────────────────────────────────────────┐  |
-|  │ AGENT C: VERIFICATION PLANNER                                             │  |
-|  │ - Synthesizes executable test specifications                              │  |
-|  │ - Emits TestSprite 3.0 assertions targeting real verification endpoints   │  |
-|  │ - Labels execution concurrency as "concurrent asynchronous requests"      │  |
-|  └───────────────────────────────────────────────────────────────────────────┘  |
-|             │                                                                   |
-|             ▼                                                                   |
-|  ┌───────────────────────────────────────────────────────────────────────────┐  |
-|  │ CONTROLLED VERIFICATION LAB (/lab)                                        │  |
-|  │ - Executes real concurrent requests (concurrency 1..5)                    │  |
-|  │ - Tests VulnerableRefundService (race window) vs FixedRefundService (lock)│  |
-|  │ - Generates concrete runtime proof: VERIFIED_FAIL or VERIFIED_PASS        │  |
-|  │ - Dynamic provenance logging: live commit SHA, fixture ID, timestamps     │  |
-|  └───────────────────────────────────────────────────────────────────────────┘  |
-|                                                                                 |
-+---------------------------------------------------------------------------------+
-```
-
----
-
-## 📊 Comprehensive Test Suite Audit
-
-FlowGuard AI has been tested rigorously across unit, integration, end-to-end, accessibility, and responsive matrices.
-
-### 1. Vitest Suite — 64/64 Passing (100%)
-- **`tests/model-provenance.test.ts` (6 tests)**:
-  - Agent A reports truthful heuristic provenance when neural model returns invalid JSON or empty invariants.
-  - Agent B reports heuristic provenance on malformed neural response and retains neural provenance on clean valid output.
-  - Pre-scan comment stripping ensures comments alone (`// without lock`) cannot fabricate false critical findings.
-  - AgentOrchestrator exposes per-agent heuristic vs neural provenance and truthful mixed-source model attribution.
-- **`tests/verification.test.ts` (9 tests)**:
-  - `V-01`: Vulnerable fixture under concurrency 2 produces duplicate refunds (`VERIFIED_FAIL`).
-  - `V-02`: Fixed fixture under concurrency 2 commits exactly once (`VERIFIED_PASS`).
-  - `V-03`: Single request concurrency 1 properly passes.
-  - `V-04`: Fixed fixture under concurrency 5 maintains strict idempotency.
-  - `V-05`: Conflicting idempotency key with differing amounts is rejected with 409 Conflict.
-  - `V-06` & `V-07`: Input bounds and required parameters are strictly enforced.
-  - `V-08`: Concurrency labeled accurately as `concurrent asynchronous requests`.
-  - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
-- **`tests/agents.test.ts` (15 tests)**:
-  - Formal invariant extraction, comment stripping in risk hunting, benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, 6-stage orchestrator pipeline.
-  - Domain isolation hardening: arithmetic code with stale JWT rule extracts `INV-MATH-001` and never leaks `INV-AUTH-001`.
-  - Domain mismatch warnings displayed prominently when user input pairs incompatible domains.
-- **`tests/github.test.ts` (22 tests)**:
-  - Strict URL validation, unified diff parser, per-file patch filtering, regression test proving skipped files are excluded from Risk Hunter input.
-  - Oversized diff handling preserving patch boundaries without mid-hunk corruption.
-  - Pagination (>100 and >300 files), rate limits (403), 404s, binary file omission, renamed files, and honest error on 0 readable code patches.
-- **`tests/api-integration.test.ts` (12 tests)**:
-  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation, and partial analysis metadata.
-
-### 2. Playwright End-to-End Suite — 42/42 Passing (100%)
-- **`tests/e2e.spec.ts` (13 tests)**:
-  - `E2E-01`: Landing page navigation and honest CTAs.
-  - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
-  - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
-  - `E2E-04`: PR & Code Analysis workspace running multi-agent pipeline.
-  - `E2E-05`: Architecture & Invariants page formal definitions.
-  - `E2E-06 (LAB-008)`: Generated verification assertion copied to clipboard with honest feedback.
-  - `E2E-07 (LAB-007)`: Empty idempotency key rejected with actionable validation and clears previous report.
-  - `E2E-08 (ANA-004)`: Empty code snippet rejected before analysis without fake report.
-  - `E2E-09 (UX-001)`: Mobile viewport (390x844) supports all primary user flows.
-  - `E2E-10`: Context Isolation — JWT preset &rarr; Clear Code &rarr; arithmetic snippet &rarr; Launch Analysis does NOT leak `INV-AUTH-001`.
-  - `E2E-11`: Clean Arithmetic preset loads consistent code & rule and verifies cleanly (`INV-MATH-001`).
-  - `E2E-12`: Domain mismatch between code and custom rule displays visible notice without certifying mismatched rule.
-  - `E2E-13`: Rapid consecutive requests drop stale in-flight responses without race condition.
-- **`tests/keyboard-accessibility.spec.ts` (4 tests)**:
-  - `A11Y-01`: Skip-to-main-content landmark navigation via first Tab key press (WCAG 2.4.1).
-  - `A11Y-02 (UX-002)`: Full keyboard focus verification (`toBeFocused()`) on Code Snippet, Business Rule, and Launch Multi-Agent Analysis button with Tab, Shift+Tab, and Enter/Space activation.
-  - `A11Y-03`: Verification Lab keyboard traversal across radio fixtures, concurrency levels, form inputs, and test assertion copy.
-  - `A11Y-04`: Mobile navigation menu keyboard focus, ARIA expanded state, and Escape key dismissal with focus restoration.
-- **`tests/responsive.spec.ts` (20 tests)**:
-  - Exhaustive 5-viewport verification matrix:
-    - iPhone SE 1st Gen: `320 × 568` (Emulated DPR: 2, `hasTouch: true`, `isMobile: true`)
-    - iPhone SE 2nd Gen: `375 × 667` (Emulated DPR: 2, `hasTouch: true`, `isMobile: true`)
-    - iPhone 14: `390 × 844` (Emulated DPR: 3, `hasTouch: true`, `isMobile: true`)
-    - iPad Portrait: `768 × 1024`
-    - MacBook Desktop: `1440 × 900`
-  - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`) on all 5 viewports across Homepage, Verification Lab, and PR Analysis Workspace.
-  - Complete primary flows verified on all screen sizes with real mobile touch tap interactions.
-- **`tests/mobile-device-emulation.spec.ts` (5 tests)**:
-  - `MOB-01`: Deployment HTML Meta Viewport tag (`<meta name="viewport" content="width=device-width, initial-scale=1"/>`) verified on all production & preview routes (`/`, `/lab`, `/analyze`, `/about`).
-  - `MOB-02`: Official `iPhone 14` device profile (DPR: 3, 390x844) touch navigation, hamburger toggle, and zero overflow.
-  - `MOB-03`: Official `iPhone SE` device profile (DPR: 2, 320x568 compact) touch execution of PR Analysis workspace with zero horizontal overflow.
-  - `MOB-04`: Official `Pixel 7` Android mobile profile (DPR: 2.625, 412x839) touch execution of Verification Lab and test assertion clipboard copying.
-  - `MOB-05`: Official `iPad Mini` tablet touch profile (DPR: 2, 768x1024) hybrid navigation and responsive layout integrity.
-  - Verified against both local server and live Vercel Preview deployment (`https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app`).
-
-### 3. Photographic Responsive & Mobile Emulation Evidence — 19 Full-Page Screenshots
-Saved in `docs/screenshots/`:
-1. `homepage-iphone-se1-320x568.png` (320px width, DPR: 2, 0 overflow)
-2. `homepage-iphone-se2-375x667.png`
-3. `homepage-iphone-14-390x844.png` (390px width, DPR: 3 retina)
-4. `homepage-ipad-portrait-768x1024.png`
-5. `homepage-desktop-macbook-1440x900.png`
-6. `lab-evidence-iphone-se1-320x568.png` (320px width, execution timeline intact)
-7. `lab-evidence-iphone-se2-375x667.png`
-8. `lab-evidence-iphone-14-390x844.png`
-9. `lab-evidence-ipad-portrait-768x1024.png`
-10. `lab-evidence-desktop-macbook-1440x900.png`
-11. `analyze-report-iphone-se1-320x568.png` (320px width, multi-agent cards responsive)
-12. `analyze-report-iphone-se2-375x667.png`
-13. `analyze-report-iphone-14-390x844.png`
-14. `analyze-report-ipad-portrait-768x1024.png`
-15. `analyze-report-desktop-macbook-1440x900.png`
-16. `mobile-emulation-iphone14-lab.png` (Official iPhone 14 touch emulation)
-17. `mobile-emulation-iphonese-analyze.png` (Official iPhone SE 320px touch emulation)
-18. `mobile-emulation-pixel7-lab.png` (Official Android Pixel 7 touch emulation)
-19. `mobile-emulation-ipadmini-lab.png` (Official iPad Mini touch emulation)
-
----
-
-## 🔍 TestSprite Season 4 Verification & Merge Gate Analysis
-
-### Factual Execution Breakdown
-- **TestSprite Execution URL**: [View Execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/48b828a4-3c0f-4bcb-9cf5-a6135f03996a)
-- **Total Test Cases**: 23
-- **Passed**: **22** (95.7% total, 100% of executable tests)
-- **Failed**: **0** (0 application defects)
-- **Blocked**: **1** (`Mobile viewport supports all primary flows`)
-
-### Root Cause of the Single Blocked Test
-1. **Remote Cloud Harness Limitation**:
-   - TestSprite's automated test agent runs inside a sandboxed cloud browser container configured with a fixed desktop viewport.
-   - The test runner log reveals that the agent attempted to execute mobile viewport checks, but the runner's underlying browser automation engine was unable to resize the browser window or emulate touch events dynamically in that environment.
-   - The test was therefore categorized by TestSprite as **`Blocked`** (environment execution constraint), **NOT `Failed`**.
-2. **Merge Gate Behavior**:
-   - The TestSprite GitHub App Merge Gate enforces a strict pass condition: any non-passing status (including `Blocked`) causes the GitHub commit check status to register as `failure` or `action_required`.
-   - In GitHub metadata, PR #1 remains open and mergeable, but the gate status reflects this runner-level block.
-3. **Honesty & Integrity Policy**:
-   - We did **NOT** delete the blocked test case.
-   - We did **NOT** tamper with TestSprite's execution results.
-   - We did **NOT** disable the Merge Gate without explicit user authorization.
-   - We provided independent, verifiable Playwright proof (`tests/responsive.spec.ts` with 20 tests and 15 screenshots) demonstrating that FlowGuard AI operates flawlessly on mobile viewports down to 320px width.
-
----
-
-## 🛡️ Security, Provenance & Code Quality Audit
-
-| Audit Area | Verification Command | Result | Details |
-|---|---|---|---|
-| **TypeScript Strictness** | `npx tsc --noEmit` | 🟢 Exit Code 0 | Zero TypeScript errors across entire codebase. |
-| **Next.js Production Build** | `npm run build` | 🟢 Exit Code 0 | All 10 routes compiled successfully (5 static, 5 dynamic). |
-| **Secret Leak Prevention** | `git ls-files \| grep .env` | 🟢 Clean | No `.env` files tracked in git; all credentials read via `process.env.*`. |
-| **Input Sanitization** | `POST /api/v1/analyses`, `/lab/verify` | 🟢 Enforced | Empty & whitespace inputs rejected with 400 Bad Request; previous reports wiped immediately. |
-| **Model Provenance** | `RequirementAgent`, `RiskHunterAgent` | 🟢 Truthful | Neural failures strictly marked `isRealModel: false` with heuristic fallback; comments stripped before scanning. |
-| **GitHub REST Protection** | `src/lib/github/pr-reader.ts` | 🟢 Enforced | Strict regex URL validation; per-file patch extraction; diffs capped at 200 KB; whole-file clean boundaries. |
-| **External Code Isolation** | Architecture Policy | 🟢 Guaranteed | External PR code is NEVER executed on the server; Verification Lab runs strictly on first-party synthetic fixtures. |
-
----
-
-## 📋 Hackathon Season 4 Submission Checklist for the User
-
-Follow this step-by-step checklist to finalize and submit FlowGuard AI on Devpost:
-
-### 1. Verification of Code & PR Status
-- [ ] Ensure all latest commits are pushed to `origin feat/testsprite-s4-hardening` (Commit: `9758e39`).
-- [ ] Confirm GitHub Actions run `test-and-verify` is green on GitHub.
-- [ ] Confirm Vercel Preview Deployment is ready at `https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app`.
-
-### 2. Devpost Submission Form Fields
-- **Project Name**: FlowGuard AI
-- **Elevator Pitch**: AI-Powered Bug Hunting & Behavioral Risk Detection Platform — Don't just review code. Prove it works.
-- **Repository URL**: `https://github.com/allfridhosaragii/FlowGuard-AI`
-- **Pull Request URL**: `https://github.com/allfridhosaragii/FlowGuard-AI/pull/1`
-- **Live Demo URL**: `https://flowguard-ai-smoky.vercel.app/`
-- **TestSprite Project URL**: `https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/48b828a4-3c0f-4bcb-9cf5-a6135f03996a`
-
-### 3. Submission Story Text (Copy & Paste Ready)
-> **What it does**:
-> FlowGuard AI combines multi-agent LLM analysis with a real-time Controlled Verification Lab to eliminate concurrency bugs, race conditions, and missing idempotency in pull requests. Instead of generating speculative code suggestions, FlowGuard AI extracts mathematical invariants (Agent A), hunts for concurrency risks in PR diffs (Agent B), synthesizes executable TestSprite 3.0 test specifications (Agent C), and proves invariants under real concurrent asynchronous requests in an isolated verification sandbox.
+> **Document status:** Working audit draft, updated 24 October 2026. **NOT a submitted entry, approval, or proof of complete compliance.**
 >
-> **How we built it**:
-> Built with Next.js 15 App Router, TypeScript (Strict), Tailwind CSS, Vitest, and Playwright. The platform features native Google Gemini REST API integration with transparent heuristic fallback, robust GitHub REST PR reading with unified diff patch filtering, and a dual-engine verification suite (64 Vitest tests + 37 Playwright tests across 5 responsive viewports).
+> **Evidence hierarchy:** Official rules and organizer announcements; GitHub commit/status/check artifacts; dated TestSprite reports; user-supplied dashboard screenshots. Where direct access or a fresh test is unavailable, the issue remains **unverified**.
 >
-> **TestSprite Season 4 Results**:
-> TestSprite automated regression testing executed 23 tests on PR #1, achieving **22 Passed, 0 Failed, and 1 Blocked (100% executable pass rate)**. The single blocked test was due to the remote test runner's viewport resizing limitation, which was independently verified and proven across 5 viewports using Playwright.
+> **Historical note:** The earlier version of this document contained old PR statuses, outdated test totals, and Devpost instructions. [View that historical snapshot at commit b283df23](https://github.com/allfridhosaragii/FlowGuard-AI/blob/b283df23db8fd988732bfa98730b582194da1bbc/docs/HACKATHON-SEASON-4-SUBMISSION.md). Do not use the historical snapshot as a current submission checklist.
 
-### 4. Interactive Steps Requiring Your Account Action
-If you wish to merge PR #1 or submit the project:
-1. **To view TestSprite Dashboard**: Log in to [TestSprite Console](https://www.testsprite.com/), navigate to Project `FlowGuard AI`, and open Execution `48b828a4-3c0f-4bcb-9cf5-a6135f03996a`.
-2. **To inspect PR #1 Merge Gate**: Open [PR #1 on GitHub](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1). Notice that the Merge Gate check shows the TestSprite status. If you choose to merge PR #1, click the green **"Merge pull request"** button (or "Merge with administrator privileges" if branch protection requires bypass for the blocked viewport runner).
-3. **To submit on Devpost**: Go to the **TestSprite Hackathon Season 4** Devpost page, click **"Create Project"** / **"Submit Project"**, fill in the fields from the checklist above, upload screenshots from `docs/screenshots/`, and click **"Save & Submit"**.
+## 1. Official Season 4 requirements and deadlines
 
----
+- Organizer: TestSprite, Season 4 Project Track. [Official event page](https://www.testsprite.com/hackathon-s4).
+- **Deadline extension announced by Holly McAninch in official Discord on 22 October 2026:** Monday **26 October 2026, 11:59 PM Pacific Time** (PDT), equivalent to **Tuesday 27 October 2026, 13:59 WIB**. This supersedes the website's earlier deadline of 22 October 23:59 PT. Screenshot of the organizer announcement is retained in the project handoff; it was not fetched directly from public Discord.
+- Organizer's extension announcement states rules, judging criteria, and prizes remain the same.
+- **Submission channel:** Discord `#hackathon-s4-submissions`. This is **not** a Devpost submission.
+- Submission should include a GitHub PR link showing TestSprite automated feedback/status, a public accessible application URL, and the participant's TestSprite account identification (name/email). The participant must verify the exact live channel instructions and account details before posting.
+- Published judging criteria: **Project Quality 40 / Tests That Run Themselves 40 / Innovation 20**. PR-triggered TestSprite testing and effective merge blocking are central to the automation component.
+- **Do not submit without an explicit final approval from the project owner and completed pre-submission audit.** A report saying "ready" is not evidence of rule compliance.
 
-*FlowGuard AI — Built with scientific rigor, mathematical honesty, and verifiable proof.*
+## 2. Canonical project references
+
+| Evidence | Reference | Status/scope |
+| --- | --- | --- |
+| Repository | [allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI) | Public when checked |
+| Baseline `main` | [b283df23db8fd988732bfa98730b582194da1bbc](https://github.com/allfridhosaragii/FlowGuard-AI/commit/b283df23db8fd988732bfa98730b582194da1bbc) | 23 Oct; verify live HEAD before finalization |
+| Intended public production | [flowguard-ai-smoky.vercel.app](https://flowguard-ai-smoky.vercel.app/) | Direct anonymous access must be rechecked |
+| Production TestSprite evidence | [Final verification document](TESTSPRITE_S4_FINAL_VERIFICATION.md) | Historical 97/97; production only |
+| Latest verified main CI | [GitHub Actions run 39985661853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39985661853) | Successful on baseline `main` |
+| Historical PR automation | [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) | **Merged**; TestSprite 22 passed, 0 failed, 1 blocked |
+| Most recent audited PR | [PR #13](https://github.com/allfridhosaragii/FlowGuard-AI/pull/13) | **Merged**; preview tests did NOT all pass |
+| Isolated bug-hunt audit | [PR #6](https://github.com/allfridhosaragii/FlowGuard-AI/pull/6) | Open draft; do **not** merge automatically |
+| GitHub ruleset | [Rule 25749816](https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816) | Configured but **DISABLED** |
+| TestSprite project | [TestSprite V3](https://www.testsprite.com/dashboard-v3) | Private account; current trigger and credit state require authenticated verification |
+
+## 3. Product overview — truthful scope
+
+FlowGuard AI uses **Next.js 15 / React 19 / TypeScript**, with three cooperating analysis stages and an opt-in verification lab.
+
+1. **Requirement Analyst (Agent A)**: extracts scoped invariant candidates from a business rule and contextual code.
+2. **Risk Hunter (Agent B)**: examines supplied snippets or selected public GitHub PR diff patches. Findings on external code are **POTENTIAL**, not proof of exploitable vulnerability or executed external code.
+3. **Verification Planner (Agent C)**: proposes test plans/assertions linked to supported fixtures.
+4. **Controlled Verification Lab**: runs concurrent asynchronous requests on allowlisted **first-party synthetic refund fixtures**. It does not execute arbitrary external PR code. Invariant `INV-REFUND-001` concerns duplicate refund side effects.
+5. **SQL deadlock / healthy stream scenarios**: deterministic **synthetic in-memory fixtures**, not production database or external stream verification.
+6. **Neural model inference**: requires `FLOWGUARD_ENABLE_NEURAL=true` and a valid provider key. Otherwise the system uses a labelled heuristic fallback. Production environment flags have not been independently inspected.
+
+The risk-analysis API constrains request body sizes, PR file selection and diff length; these do **not** mean every threat, race, or arbitrary PR has been verified.
+
+## 4. Test evidence — separate environments, no combined pass claims
+
+| Test source | Date/environment | Verified outcome | Meaning |
+| --- | --- | --- | --- |
+| **Vitest** | GitHub CI on baseline `main`, 23 Oct 2026 | **118/118 passed** | Repository unit/integration suite |
+| **Playwright** | Same GitHub CI | **57/57 passed** | Local CI browser E2E, accessibility and responsive checks |
+| **TypeScript / Next build** | Same CI | Success | Compile/build gates; does not certify production availability |
+| **ESLint** | Same CI | **0 errors; 24 warnings** | Nonzero warnings remain |
+| **TestSprite production** | 23 Oct 2026, reported 21:33 WIB | **97 passed, 0 failed, 0 blocked** | Historical full production regression; **not** a PR preview result |
+| **TestSprite PR #1** | 21 Oct 2026, automated PR feedback | **22 passed, 0 failed, 1 blocked (23 total)** | PR-level automation executed; check state `failure` |
+| **TestSprite PR #13** | 23 Oct 2026, protected Vercel preview | **2 passed, 2 failed, 93 blocked (97 total)** | Unsuccessful PR preview coverage due predominantly to Vercel login |
+
+- [Production verification evidence](TESTSPRITE_S4_FINAL_VERIFICATION.md)
+- [Main CI run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39985661853)
+- [PR #1 TestSprite comment](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1#issuecomment-6306495822)
+- [PR #13 TestSprite comment](https://github.com/allfridhosaragii/FlowGuard-AI/pull/13#issuecomment-6368289766)
+- [PR #13 unsuccessful preview execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/498782fb-772f-4665-a983-6ba0ccbc11c3)
+
+**Viewport note:** The earlier diagnosis that the PR #1 blocked mobile case was definitively caused by an immutable cloud-runner viewport was not substantiated. Subsequent TestSprite support correspondence stated that the viewport had not been configured at the project or test-case level. Playwright mobile coverage is independent of this TestSprite case.
+
+## 5. TestSprite status inconsistency and the merge-gate gap
+
+At commit `78e2e444fab76359629749bc7267c1bb98eee2d6` (PR #13), GitHub's TestSprite V3 commit-status history includes:
+
+- Earlier execution: `failure`, description **76/97 passed · 21 failed**.
+- Later execution: `success`, description **2/97 passed · 2 failed · 93 blocked**, linking to the unsuccessful execution above.
+
+**This is an observed mismatch between the final GitHub status and its own test-result description.** The underlying reason has not been established; do not assert it is definitely a vendor bug or a local misconfiguration.
+
+As of the authenticated TestSprite screenshots inspected on 24 October:
+
+- Trigger 1: Vercel bot PR-comment event, target URL fixed to `feat-1b3908` preview, **Disabled**, merge-gate option enabled in its stored configuration.
+- Trigger 2: Vercel commit-status event, dynamic `{branch-slug}` preview URL, **Disabled**, merge-gate option not enabled.
+- The Activity tab shows PR #13 events as **Tests started**; this is not a completed passing result.
+- A separate GitHub branch ruleset targets the default branch and requires `test-and-verify` and `TestSprite V3`, with no bypass list. **Enforcement is disabled**, so it does not currently block merges.
+- Activating these independently without repairing status consistency, preview accessibility, and credit capacity could create misleading passes or an unusable merge path.
+
+An escalation to TestSprite support and the organizer has been sent by the participant concerning the anomalous status and delayed participant plan/credits. **Do not run another credit-consuming suite without approval and known capacity.**
+
+## 6. Security and dependency audit boundaries
+
+- GitHub Actions include TypeScript, lint, build, Vitest and Playwright on `ci.yml`; the CI workflow **does not itself execute remote TestSprite 3.0**.
+- CodeQL and production-only npm audit are present in a separate security workflow.
+- Semgrep and ZAP steps are configured with `continue-on-error: true`; Trivy uses `exit-code: '0'`. Therefore passing workflow status does **not** mean zero scanner findings.
+- Archived evidence includes a post-fix CodeQL SARIF run with zero entries and a Trivy snapshot with zero reported findings **for their respective runs/scopes**. Full development-dependency audits previously reported advisories, even where the production-only high/critical audit passed.
+- The Content-Security-Policy currently permits `'unsafe-inline'` for scripts/styles, a documented hardening limitation.
+- No application-level rate limiting was established in the audited API route source; any Vercel-side WAF controls remain unverified.
+- GitHub PR fetch in `src/lib/github/pr-reader.ts` lacks an explicit request timeout in the audited source.
+- A license badge was previously present in README while `LICENSE` was missing from the repository. **Do not infer or grant a license without the repository owner's decision.**
+
+## 7. Pre-submission gates (ALL must be assessed)
+
+- [ ] Validate the exact pinned organizer instructions in `#hackathon-s4-submissions`, including any change after the deadline-extension announcement.
+- [ ] Establish whether a submission was already made, and whether post-submission changes are prohibited. **Never submit automatically.**
+- [ ] Confirm an anonymous visitor can open the canonical production deployment and use key paths.
+- [ ] Verify TestSprite participant plan and credit availability from the actual dashboard; distinguish requested upgrade from granted upgrade.
+- [ ] Resolve or obtain official guidance on TestSprite status `success` with failed/blocked tests.
+- [ ] Configure a single correct PR-event/preview strategy without accidentally testing a fixed old branch or duplicating paid executions.
+- [ ] Show a real PR check failure prevents merging with the **enforced** GitHub ruleset, then show the corrected passing check allows merging, only with permission and available credits.
+- [ ] Review unresolved dependency, scanner, API abuse, CSP, and documentation issues; make evidence-backed decisions.
+- [ ] Choose a PR with accurate and clearly displayed TestSprite results and confirm the final public live URL.
+- [ ] Confirm the participant's intended TestSprite account name/email and exact Discord submission format. Never invent identifiers.
+- [ ] Obtain explicit owner sign-off. Only then prepare a final submission action.
+
+**Readiness is NOT 100% merely because production TestSprite had 97/97 passing tests.**
+
+## 8. Process safety
+
+- Do not alter `main`, merge PRs, enable TestSprite triggers, spend credits, change Vercel protection, activate GitHub rulesets, or post the Discord submission as a side effect of editing these docs.
+- Documentation edits should first be isolated in a separate branch. Creation of a branch/commit may itself trigger Vercel deployment depending on configured hooks; review activity afterwards.
+- If the project has already been officially submitted and subsequent changes are prohibited, freeze all changes and use read-only inspection.
+
+## 9. Controlled PR #14 live-trigger verification
+
+> **Status at commit time:** Verification in progress; **not** a passing TestSprite result, a verified GitHub merge block, or submission approval.
+
+- Intent: use this documentation-only commit on draft PR #14 to generate a **real Vercel preview event** for the enabled TestSprite `vercel[bot] PR comment` trigger; do not use `Send Test Event`, which TestSprite Support confirmed can overwrite genuine failing statuses with `success`.
+- Target: the existing public `docs-15dd3a` Vercel preview for this PR; `Run on drafts too` and TestSprite `Merge gate` were enabled by the owner. The separate older Vercel commit-status trigger remains disabled.
+- Required evidence after the event: Vercel deployment readiness, an actual matching Vercel comment, an attributable PR-scoped TestSprite execution, and the resulting GitHub commit status. A GitHub ruleset set to `Disabled` **cannot** itself prove merge blocking.
+- Do not infer pass/fail totals, credits consumed, or successful PR enforcement from trigger configuration alone. Do not merge or submit without explicit owner approval.

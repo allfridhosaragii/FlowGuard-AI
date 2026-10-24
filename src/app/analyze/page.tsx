@@ -62,6 +62,8 @@ export default function AnalysisWorkspacePage() {
   };
 
   const handleRunAnalysis = async () => {
+    // Keep the button focusable while pending; aria-disabled requires a handler guard.
+    if (loading) return;
     // Reset prior reports and errors immediately on new run attempt
     setResult(null);
     setError(null);
@@ -519,9 +521,10 @@ export default function AnalysisWorkspacePage() {
               id="btn-launch-analysis"
               data-testid="btn-launch-analysis"
               aria-label="Launch Multi-Agent Analysis"
-              disabled={loading}
+              aria-disabled={loading}
+              aria-describedby="analysis-progress-announcement"
               onClick={handleRunAnalysis}
-              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors aria-disabled:opacity-50 aria-disabled:cursor-progress shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
@@ -536,6 +539,24 @@ export default function AnalysisWorkspacePage() {
               )}
             </button>
           </div>
+
+          {/* Keep progress and completion discoverable to screen readers without stealing focus. */}
+          <p
+            id="analysis-progress-announcement"
+            role="status"
+            aria-label="Code analysis progress"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {loading
+              ? 'Analysis in progress'
+              : result
+                ? 'Analysis complete'
+                : error
+                  ? 'Analysis encountered an error'
+                  : ''}
+          </p>
 
           {error && (
             <div

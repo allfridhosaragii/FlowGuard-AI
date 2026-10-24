@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { ScenarioName, ScenarioAuditEvidence } from '@/lib/verification/scenario-runner';
 
 export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
   const [evidence, setEvidence] = useState<ScenarioAuditEvidence | null>(null);
+  const pendingAuditRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -14,6 +15,9 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
   const label = isDeadlock ? 'SQL Deadlock' : 'Normal Healthy Stream';
 
   const runAudit = async () => {
+    // aria-disabled keeps the trigger in the Tab sequence; guard re-entrant clicks.
+    if (pendingAuditRef.current) return;
+    pendingAuditRef.current = true;
     setLoading(true);
     setError(null);
     setEvidence(null);
@@ -35,6 +39,7 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to complete scenario audit');
     } finally {
+      pendingAuditRef.current = false;
       setLoading(false);
     }
   };
@@ -93,12 +98,16 @@ export function ScenarioAuditPanel({ scenario }: { scenario: ScenarioName }) {
         <button
           type="button"
           onClick={runAudit}
-          disabled={loading}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-accent hover:bg-accent-hover px-6 py-3 font-semibold text-sm text-white disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent"
+          aria-disabled={loading}
+          aria-describedby="scenario-audit-progress"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-accent hover:bg-accent-hover px-6 py-3 font-semibold text-sm text-white aria-disabled:opacity-50 aria-disabled:cursor-progress focus-visible:ring-2 focus-visible:ring-accent"
           aria-label={isDeadlock ? 'Run SQL deadlock audit' : 'Run healthy stream audit'}
         >
           {loading ? 'Running Scenario Audit...' : isDeadlock ? 'Run SQL Deadlock Audit' : 'Run Healthy Stream Audit'}
         </button>
+        <p id="scenario-audit-progress" role="status" aria-label="Scenario audit progress" aria-live="polite" aria-atomic="true" className="sr-only">
+          {loading ? 'Scenario audit in progress' : evidence ? `Scenario audit complete: ${evidence.riskLevel} risk, ${evidence.verdict}` : error ? 'Scenario audit encountered an error' : ''}
+        </p>
         {error && <p role="alert" className="text-danger text-sm">{error}</p>}
       </div>
 

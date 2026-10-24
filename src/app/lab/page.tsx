@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ScenarioAuditPanel } from '@/components/ScenarioAuditPanel';
 import type { ScenarioName } from '@/lib/verification/scenario-runner';
 import {
@@ -28,6 +28,7 @@ export default function VerificationLabPage() {
   const [amountMinor, setAmountMinor] = useState<number>(125000);
   const [payloadMode, setPayloadMode] = useState<'same_amount' | 'differing_amount'>('same_amount');
 
+  const inFlightVerificationRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [evidence, setEvidence] = useState<VerificationEvidence | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,9 @@ export default function VerificationLabPage() {
   const [copyFailed, setCopyFailed] = useState(false);
 
   const handleRunVerification = async () => {
+    // aria-disabled preserves keyboard focus, so clicks/Enter must be guarded explicitly.
+    // A ref also prevents two rapid activations before React flushes the loading state.
+    if (inFlightVerificationRef.current) return;
     // Clear stale evidence and prior errors immediately on submit
     setEvidence(null);
     setError(null);
@@ -48,6 +52,7 @@ export default function VerificationLabPage() {
       return;
     }
 
+    inFlightVerificationRef.current = true;
     setLoading(true);
     try {
       const res = await fetch('/api/v1/lab/verify', {
@@ -74,6 +79,7 @@ export default function VerificationLabPage() {
       setError(err instanceof Error ? err.message : 'Unexpected failure while running verification');
       setEvidence(null);
     } finally {
+      inFlightVerificationRef.current = false;
       setLoading(false);
     }
   };
@@ -158,13 +164,13 @@ export default function VerificationLabPage() {
 
           {/* Fixture Toggle */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <div id="lab-fixture-group-label" className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Target Implementation</span>
               <span className="text-[11px] text-muted font-normal">
                 {fixture === 'vulnerable' ? 'Flawed race window' : 'Atomic mutex lock'}
               </span>
-            </label>
-            <div className="grid grid-cols-2 gap-2" aria-label="Target Implementation Fixture">
+            </div>
+            <div role="group" aria-labelledby="lab-fixture-group-label" className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 id="fixture-vulnerable"
@@ -209,11 +215,11 @@ export default function VerificationLabPage() {
 
           {/* Concurrency Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <div id="lab-concurrency-group-label" className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Concurrent Parallel Requests</span>
               <span className="font-mono text-xs font-bold text-accent">{concurrency} Async Requests</span>
-            </label>
-            <div className="grid grid-cols-5 gap-2" aria-label="Concurrent Parallel Requests Level">
+            </div>
+            <div role="group" aria-labelledby="lab-concurrency-group-label" className="grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((lvl) => (
                 <button
                   key={lvl}
@@ -338,9 +344,10 @@ export default function VerificationLabPage() {
               id="btn-execute-verification"
               data-testid="btn-execute-verification"
               aria-label="Execute Verification Harness"
-              disabled={loading}
+              aria-disabled={loading}
+              aria-describedby="lab-verification-announcement"
               onClick={handleRunVerification}
-              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors aria-disabled:opacity-50 aria-disabled:cursor-progress shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
@@ -355,6 +362,24 @@ export default function VerificationLabPage() {
               )}
             </button>
           </div>
+
+          {/* Stable polite live region: screen readers hear progress/verdict without moving focus. */}
+          <p
+            id="lab-verification-announcement"
+            role="status"
+            aria-label="Lab verification progress"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {loading
+              ? 'Verification in progress'
+              : evidence
+                ? `Verification finished — ${evidence.verdict === 'VERIFIED_PASS' ? 'observed effects remained within the invariant limit' : evidence.verdict === 'VERIFIED_FAIL' ? 'observed effects exceeded the invariant limit' : 'the outcome was inconclusive'}`
+                : error
+                  ? 'Verification encountered an error'
+                  : ''}
+          </p>
 
           {error && (
             <div
