@@ -28,6 +28,27 @@ jobs:
           npm install zod@4.6.7 --save-exact --no-fund --no-audit
           node -e "console.log('TESTING_ZOD_VERSION',require('zod/package.json').version)"
           git diff --stat -- package.json package-lock.json
+      - name: Apply three exact Zod4 API adjustments in isolated runner only
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          edits = {
+              'src/app/api/v1/analyses/route.ts': [('validated.error.errors[0]', 'validated.error.issues[0]')],
+              'src/app/api/v1/lab/verify/route.ts': [('validated.error.errors[0]', 'validated.error.issues[0]')],
+              'src/lib/schemas/agent-schemas.ts': [('inputVector: z.record(z.any())', 'inputVector: z.record(z.string(), z.any())')],
+          }
+          for file, operations in edits.items():
+              p = Path(file)
+              old = p.read_text(encoding='utf-8')
+              new = old
+              for a, b in operations:
+                  assert new.count(a) == 1, f'Expected unique match in {file}: {a}'
+                  new = new.replace(a, b)
+              p.write_text(new, encoding='utf-8')
+              print('ZOD4_PATCHED', file)
+          PY
+          git diff --stat
       - name: Check patched production dependencies
         run: npm audit --omit=dev --audit-level=high
       - name: Validate TypeScript after major upgrade
@@ -46,6 +67,14 @@ jobs:
         id: build
         continue-on-error: true
         run: npm run build
+      - name: Install Chromium for local browser regression
+        run: npx playwright install --with-deps chromium
+      - name: Run 57 Playwright baseline tests against isolated patched build
+        id: browser
+        continue-on-error: true
+        env:
+          CI: 'true'
+        run: npx playwright test --config=playwright.audit.config.ts --workers=1 --retries=0
       - name: Record honest compatibility outcome
         if: always()
         shell: bash
@@ -54,10 +83,24 @@ jobs:
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
+          BROWSER_OUTCOME: ${{ steps.browser.outcome }}
         run: |
-          printf 'ZOD4_COMPAT_OUTCOME tsc=%s unit=%s lint=%s build=%s\n' "$TSC_OUTCOME" "$UNIT_OUTCOME" "$LINT_OUTCOME" "$BUILD_OUTCOME"
-          if [ "$TSC_OUTCOME" != success ] || [ "$UNIT_OUTCOME" != success ] || [ "$LINT_OUTCOME" != success ] || [ "$BUILD_OUTCOME" != success ]; then
+          printf 'ZOD4_COMPAT_OUTCOME tsc=%s unit=%s lint=%s build=%s browser=%s\\n' "$TSC_OUTCOME" "$UNIT_OUTCOME" "$LINT_OUTCOME" "$BUILD_OUTCOME" "$BROWSER_OUTCOME"
+          if [ "$TSC_OUTCOME" != success ] || [ "$UNIT_OUTCOME" != success ] || [ "$LINT_OUTCOME" != success ] || [ "$BUILD_OUTCOME" != success ] || [ "$BROWSER_OUTCOME" != success ]; then
             echo 'ZOD4_COMPAT_NOT_READY: Do not ship major upgrade without addressing failures.'
             exit 1
           fi
-          echo 'ZOD4_COMPAT_STATIC_AND_UNIT_GREEN. Browser regression suite is still required before shipping.'
+          echo 'ZOD4_COMPAT_ALL_BASELINE_TESTS_GREEN_IN_ISOLATED_RUNNER. Changes not deployed.'
+      - name: Archive isolated Zod4 patch material (not deployed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zod4-isolated-security-patch-review
+          path: |
+            package.json
+            package-lock.json
+            src/app/api/v1/analyses/route.ts
+            src/app/api/v1/lab/verify/route.ts
+            src/lib/schemas/agent-schemas.ts
+            test-results/
+          retention-days: 7
