@@ -54,9 +54,7 @@ test('DIAG-ANALYZE: compare Enter, Space, direct click after natural Tab', async
 test('DIAG-HOME: compare Enter, Space, direct click on focused hero link',async({page,browserName})=>{
   await page.goto('/');
   await installProbe(page);
-  await pressUntil(page,'a[href="/lab"]');
-  // Another /lab navigation link precedes hero; focus the specifically named hero CTA
-  // in the next loop if the first matched link was the navbar.
+  // Directly observe natural focus of the specifically named hero CTA.
   const hero=page.getByRole('link',{name:'Open Verification Lab',exact:true});
   let onHero=await hero.evaluate(el=>el===document.activeElement);
   for(let i=0;!onHero&&i<20;i++){
@@ -76,6 +74,10 @@ test('DIAG-HOME: compare Enter, Space, direct click on focused hero link',async(
 });
 
 test('DIAG-LAB: distinguish keyboard event, native click and JS hydration',async({page,browserName})=>{
+  await page.route('**/api/v1/lab/verify', async route => {
+    await new Promise(resolve => setTimeout(resolve, 1300));
+    await route.continue();
+  });
   await page.goto('/lab');
   await installProbe(page);
   await pressUntil(page,'#btn-execute-verification');
