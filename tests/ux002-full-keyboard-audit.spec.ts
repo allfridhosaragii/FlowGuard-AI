@@ -134,3 +134,38 @@ test('UX002-LAB-DOUBLE: repeat Enter while pending cannot duplicate API request'
   await expect(status).toContainText('Verification finished');
   expect(requests).toBe(1);
 });
+
+
+test('UX002-SCENARIO: keyboard focus and live feedback survive slow synthetic scenario execution', async ({ page }) => {
+  await slowApi(page, '/api/v1/lab/scenario');
+  let dispatched = 0;
+  page.on('request', request => {
+    if (request.url().includes('/api/v1/lab/scenario')) dispatched++;
+  });
+  await page.goto('/lab');
+  const preset = page.getByRole('button', { name: 'SQL Deadlock', exact: true });
+  let presetReached = false;
+  for (let i = 0; i < 26; i++) {
+    await page.keyboard.press('Tab');
+    presetReached = await preset.evaluate(el => document.activeElement === el);
+    if (presetReached) break;
+  }
+  expect(presetReached).toBe(true);
+  await page.keyboard.press('Enter');
+  const execute = page.getByRole('button', { name: 'Run SQL deadlock audit' });
+  let executeReached = false;
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press('Tab');
+    executeReached = await execute.evaluate(el => document.activeElement === el);
+    if (executeReached) break;
+  }
+  expect(executeReached).toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status', { name: 'Scenario audit progress' })).toContainText('Scenario audit in progress');
+  await expect(execute).toBeFocused();
+  await expect(execute).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status', { name: 'Scenario audit progress' })).toContainText('Scenario audit complete: HIGH risk');
+  await expect(page.getByTestId('scenario-audit-results')).toContainText('HIGH RISK');
+  expect(dispatched).toBe(1);
+});
