@@ -12,6 +12,7 @@ All links below are evidence by scope. **Do not equate production 97/97 with the
 | **Current genuine TestSprite suite** | https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/7a1fa9d9-18a6-4b97-bf58-a922595d05cf | **96 passed, 1 blocked / 97**, GitHub status failure |
 | Historical simulated TestSprite event | https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/788f945e-18ff-4788-afc1-e7efdd81f683 | **95 passed, 2 failed**; synthetic Send Test Event may wrongly post status success |
 | PR #14 core CI | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459361 | **118 Vitest + 57 Playwright**, build, TypeScript, lint |
+| Read-only hosted public smoke | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40089236066 | 10 safe GET checks, 2 hosts x 5 endpoints; HTTP 200, health ok, basic security header assertions |
 | Real keyboard proof | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821 | **6/6** browser checks local+preview+production |
 | Actual-Tab keyboard test source | https://github.com/allfridhosaragii/FlowGuard-AI/blob/audit/keyboard-natural-tab-20261024/tests/keyboard-natural-tab-audit.spec.ts | No forced focus/click/fill |
 | Keyboard trace/screenshot artifact | https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821/artifacts/12555251397 | 7-day retention, preserve before expiry if needed |

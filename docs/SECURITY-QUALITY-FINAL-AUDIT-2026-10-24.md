@@ -5,6 +5,7 @@
 ## 1. Snapshot and source of truth
 
 - `main`: `b283df23db8fd988732bfa98730b582194da1bbc`; PR #14 docs branch: `f812a92123880a251912e53ad03816e44e10c936`. This audit-only documentation branch does not change these.
+- [Hosted read-only smoke on Oct 24](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40089236066): **10/10 GET** targets passed (both production and PR #14 preview, routes /, /lab, /analyze, /about, health API). HTTP 200, health ok, and essential response headers were checked. This was neither an exploit test nor a load test.
 - [CI PR #14 run 40078459361](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459361): TypeScript, lint, production build, **118/118 Vitest** and **57/57 Playwright** passed.
 - [Security production advisory & CodeQL run 39952366285](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39952366285): production-only npm audit **0 vulnerabilities at run time**, and CodeQL analysis job successful. Workflow-job success **is not a guarantee of zero security alerts**.
 - [Toolbox audit 40078459319](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459319): Semgrep **18 findings** from 35 files; passive ZAP **60 PASS, 1 WARN, 0 FAIL**; Trivy job reported success despite configured non-failing exit policy.

@@ -30,6 +30,7 @@ The website currently says **Oct 22** and `#hackathon-submissions`. A participan
 |---|---|---|
 | Oct 24, real PR #14 event | **96 Passed, 0 Failed, 1 Blocked / 97** | [TestSprite execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/7a1fa9d9-18a6-4b97-bf58-a922595d05cf) |
 | Oct 24, CI PR #14 | **118 Vitest + 57 Playwright Passed**, TypeScript, lint, build passed | [CI run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459361) |
+| Oct 24, public hosted GET smoke | **10/10 safe HTTP GET checks** across production and PR preview; all primary routes 200, health ok, basic headers passed | [Workflow run 40089236066](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40089236066) |
 | Oct 24, independent keyboard | **6/6 Passed**: 2 local, 2 hosted preview, 2 production, natural Tab/Shift+Tab/Enter/Space | [Independent action](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821) |
 | Oct 24, PR #14 simulated Send Test Event | **95 Passed, 2 Failed, 0 Blocked**, fake GitHub `success` not merge-gate proof | [Simulated execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/788f945e-18ff-4788-afc1-e7efdd81f683) |
 | Oct 23, historical production | **97/97 Passed**, not PR preview | [Historical verification](TESTSPRITE_S4_FINAL_VERIFICATION.md) |
