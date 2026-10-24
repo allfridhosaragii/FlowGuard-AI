@@ -1,0 +1,44 @@
+name: S4 Public Staging Preview Readiness (GET only)
+
+on:
+  push:
+    branches:
+      - staging/s4-pr14-keyboard-integration-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  anonymous-staging-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify real staging Vercel preview without login or TestSprite
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://flowguard-ai-git-stag-3631de-pedoprimasaragi-gmailcoms-projects.vercel.app'
+          for path in / /analyze /lab /about /api/v1/health; do
+            url="$BASE$path"
+            code="$(curl --silent --show-error --location --retry 3 --retry-all-errors \
+                  --retry-delay 5 --max-time 30 --output /tmp/flowguard-body \
+                  --dump-header /tmp/flowguard-headers --write-out '%{http_code}' "$url")"
+            final_url="$(curl --silent --location --head --max-time 20 --output /dev/null \
+                        --write-out '%{url_effective}' "$url")"
+            echo "ANONYMOUS_GET HTTP=$code URL=$url FINAL=$final_url"
+            if [ "$code" != "200" ]; then
+              echo "ACCESS_BLOCKED: Staging preview cannot be safely targeted by TestSprite"
+              exit 1
+            fi
+            if grep -qiE 'Vercel Authentication|Authentication Required|Login to Vercel|Authentication Failed' /tmp/flowguard-body; then
+              echo "ACCESS_BLOCKED: Vercel authentication page detected"
+              exit 1
+            fi
+            if [ "$path" = "/api/v1/health" ]; then
+              node -e 'const fs=require("node:fs");const v=JSON.parse(fs.readFileSync("/tmp/flowguard-body","utf8"));if(v.status!=="ok"){console.error("HEALTH_NOT_OK");process.exit(1);}console.log("HEALTH_OK",v.status);'
+            elif ! grep -qi 'FlowGuard AI' /tmp/flowguard-body; then
+              echo "WRONG_DEPLOYMENT: Expected FlowGuard AI identity not present"
+              exit 1
+            fi
+          done
+          echo "READONLY_STAGING_PREVIEW_PUBLIC_OK"
