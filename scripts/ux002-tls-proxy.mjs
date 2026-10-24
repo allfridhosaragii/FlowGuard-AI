@@ -1,9 +1,9 @@
 /* An isolated local HTTPS reverse proxy for production-like browser testing.
  * It does not alter app CSP or production deployment configuration.
  * A self-signed localhost certificate is generated only in the GitHub runner. */
-const fs = require('node:fs');
-const https = require('node:https');
-const http = require('node:http');
+import * as fs from 'node:fs';
+import * as https from 'node:https';
+import * as http from 'node:http';
 const cert = fs.readFileSync(process.env.UX002_TLS_CERT);
 const key = fs.readFileSync(process.env.UX002_TLS_KEY);
 const port = Number(process.env.UX002_TLS_PORT || 3443);

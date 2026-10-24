@@ -60,7 +60,7 @@ jobs:
             -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
           npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/ux002-next.log 2>&1 &
           export UX002_TLS_KEY=/tmp/ux002-key.pem UX002_TLS_CERT=/tmp/ux002-cert.pem
-          node scripts/ux002-tls-proxy.cjs > /tmp/ux002-proxy.log 2>&1 &
+          node scripts/ux002-tls-proxy.mjs > /tmp/ux002-proxy.log 2>&1 &
           for n in $(seq 1 60); do
             if curl -k -fsS https://localhost:3443/api/v1/health > /dev/null; then
               echo 'UX002_STAGING_HTTPS_READY'
