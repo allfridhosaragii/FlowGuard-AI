@@ -164,13 +164,13 @@ export default function VerificationLabPage() {
 
           {/* Fixture Toggle */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <div id="lab-fixture-group-label" className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Target Implementation</span>
               <span className="text-[11px] text-muted font-normal">
                 {fixture === 'vulnerable' ? 'Flawed race window' : 'Atomic mutex lock'}
               </span>
-            </label>
-            <div className="grid grid-cols-2 gap-2" aria-label="Target Implementation Fixture">
+            </div>
+            <div role="group" aria-labelledby="lab-fixture-group-label" className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 id="fixture-vulnerable"
@@ -215,11 +215,11 @@ export default function VerificationLabPage() {
 
           {/* Concurrency Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <div id="lab-concurrency-group-label" className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Concurrent Parallel Requests</span>
               <span className="font-mono text-xs font-bold text-accent">{concurrency} Async Requests</span>
-            </label>
-            <div className="grid grid-cols-5 gap-2" aria-label="Concurrent Parallel Requests Level">
+            </div>
+            <div role="group" aria-labelledby="lab-concurrency-group-label" className="grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((lvl) => (
                 <button
                   key={lvl}

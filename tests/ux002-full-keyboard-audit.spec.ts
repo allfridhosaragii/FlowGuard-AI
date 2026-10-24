@@ -87,3 +87,50 @@ test.describe('UX-002 deep keyboard and accessible status audit', () => {
     await expect(status).toContainText('Analysis complete');
   });
 });
+
+
+test('UX002-HOME: natural Tab reaches both hero links and Enter navigates correctly', async ({ page }) => {
+  for (const flow of [
+    { text: 'Open Verification Lab', route: /\/lab$/, heading: /Controlled Verification Lab/ },
+    { text: 'Analyze Pull Request', route: /\/analyze$/, heading: /Pull Request & Code Analysis Workspace/ },
+  ]) {
+    await page.goto('/');
+    const hero = page.getByRole('link', { name: flow.text, exact: true });
+    let reached = false;
+    for (let i = 0; i < 25; i++) {
+      await page.keyboard.press('Tab');
+      reached = await hero.evaluate(el => el === document.activeElement);
+      if (reached) break;
+    }
+    expect(reached, flow.text + ' is not reachable by natural Tab').toBe(true);
+    await expect(hero).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(flow.route);
+    await expect(page.getByRole('heading', { name: flow.heading })).toBeVisible();
+  }
+});
+
+test('UX002-LAB-GROUPS: controls have proper accessible group names', async ({ page }) => {
+  await page.goto('/lab');
+  const fixture = page.getByRole('group', { name: /Target Implementation/ });
+  const concurrency = page.getByRole('group', { name: /Concurrent Parallel Requests/ });
+  await expect(fixture.getByRole('button', { name: /Vulnerable Fixture/ })).toBeVisible();
+  await expect(fixture.getByRole('button', { name: /Corrected Fixture/ })).toBeVisible();
+  await expect(concurrency.getByRole('button', { name: '2 concurrent asynchronous requests' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('UX002-LAB-DOUBLE: repeat Enter while pending cannot duplicate API request', async ({ page }) => {
+  await slowApi(page, '/api/v1/lab/verify');
+  let requests = 0;
+  page.on('request', req => {
+    if (req.url().includes('/api/v1/lab/verify')) requests += 1;
+  });
+  await page.goto('/lab');
+  await tabUntil(page, 'btn-execute-verification');
+  await page.keyboard.press('Enter');
+  const status = page.getByRole('status', { name: 'Lab verification progress' });
+  await expect(status).toContainText('Verification in progress');
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Verification finished');
+  expect(requests).toBe(1);
+});

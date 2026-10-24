@@ -20,9 +20,16 @@ jobs:
           cache: npm
       - run: npm ci --no-fund --no-audit
       - run: npx playwright install --with-deps chromium
-      - run: npm run build
-      - name: Execute UX-002 full path and stress-focus tests
-        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --config=playwright.config.ts --project=chromium --workers=1 --retries=0
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: ESLint
+        run: npm run lint
+      - name: Vitest full suite
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Playwright full browser suite with UX-002
+        run: npx playwright test --config=playwright.audit.config.ts --workers=1 --retries=0
       - name: Upload browser proof (traces/screenshots)
         if: always()
         uses: actions/upload-artifact@v4
