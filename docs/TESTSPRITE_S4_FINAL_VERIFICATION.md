@@ -1,5 +1,7 @@
 # TestSprite Season 4 — Final Verification Evidence
 
+> **HISTORICAL PRODUCTION RESULT ONLY (clarified 25 Oct 2026).** The 97/97 result below applies to the **23 October production execution**, not to current PR #14. The current genuine PR #14 vendor run is **96 Passed, 0 Failed, 1 Blocked / 97**, with GitHub `TestSprite V3: failure`. See [current audit](S4-FINAL-SECURITY-QUALITY-AUDIT-2026-10-25.md) and [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14). Do not claim a 97/97 PR pass.
+
 ## Project
 FlowGuard AI — Behavioral Risk Detection & Bug Hunting
 
