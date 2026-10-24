@@ -1,0 +1,82 @@
+name: S4 Final Quality Gate — Postfix Public Smoke + Production Dependency Audit
+
+on:
+  push:
+    branches:
+      - security/s4-zod4-final-audit-20261025
+    paths:
+      - .github/workflows/s4-postfix-final-quality.yml
+
+permissions:
+  contents: read
+
+jobs:
+  public-readonly:
+    name: Production and PR14 public smoke (GET only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check 10 public routes without authentication or TestSprite
+        shell: bash
+        run: |
+          set -euo pipefail
+          for base in \
+            https://flowguard-ai-smoky.vercel.app \
+            https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+          do
+            for path in / /analyze /lab /about /api/v1/health
+            do
+              url="$base$path"
+              code="$(curl --silent --show-error --location --retry 3 --retry-delay 3 --max-time 30 \
+                --output /tmp/fg-s4-body --dump-header /tmp/fg-s4-headers --write-out '%{http_code}' "$url")"
+              final="$(curl --silent --show-error --location --head --max-time 20 \
+                --output /dev/null --write-out '%{url_effective}' "$url")"
+              echo "FINAL_S4_ANONYMOUS_GET HTTP=$code URL=$url FINAL=$final"
+              test "$code" = 200
+              [[ "$final" != https://vercel.com/login* ]]
+              ! grep -qiE 'Vercel Authentication|Login to Vercel|Authentication Required' /tmp/fg-s4-body
+              if [ "$path" = /api/v1/health ]; then
+                node -e 'const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/fg-s4-body","utf8"));if(d.status!=="ok"){process.exit(1)}console.log("FLOWGUARD_HEALTH_OK")'
+              else
+                grep -qi 'FlowGuard AI' /tmp/fg-s4-body
+                grep -qi 'content-security-policy:' /tmp/fg-s4-headers
+                grep -qi 'x-content-type-options:' /tmp/fg-s4-headers
+              fi
+            done
+          done
+          echo "PUBLIC_PROD_AND_PR14_ALL_TEN_ROUTES_OK_NO_TESTSPRITE"
+  zod-committed-audit:
+    name: Reproducible lockfile + high production advisory scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify Zod4 source and lockfile are committed
+        run: |
+          node -e 'const p=require("./package.json"),l=require("./package-lock.json");if(p.dependencies.zod!=="4.6.7" || l.packages["node_modules/zod"].version!=="4.6.7")process.exit(1);console.log("COMMITTED_ZOD4_LOCKFILE_MATCH")'
+      - name: Verify clean reproducible install
+        run: npm ci --no-fund --no-audit
+      - name: Gate production npm vulnerabilities, high or critical
+        run: npm audit --omit=dev --audit-level=high
+      - name: Trivy high and critical vulnerability scan, failing on findings
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          format: json
+          output: trivy-postfix-high-critical.json
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+      - name: Upload security scan proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-postfix-high-critical-scan
+          path: trivy-postfix-high-critical.json
+          if-no-files-found: warn
+          retention-days: 7
