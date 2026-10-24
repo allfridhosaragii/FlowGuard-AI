@@ -1,68 +1,44 @@
-# TestSprite Season 4 — Final Verification Evidence
+# TestSprite Season 4 — Current and Historical Verification Evidence
 
-## Project
-FlowGuard AI — Behavioral Risk Detection & Bug Hunting
+**Updated 24 Oct 2026.** Results represent distinct executions; no combined fake success.
 
-- **Repository:** https://github.com/allfridhosaragii/FlowGuard-AI
-- **Production:** https://flowguard-ai-smoky.vercel.app/
-- **Test Platform:** TestSprite 3.0
+## Current real PR #14 execution
 
-## Verified Production Test Results
+PR: https://github.com/allfridhosaragii/FlowGuard-AI/pull/14
 
-**Execution:** October 23, 2026, 21:33 WIB
+- Head: `f812a92123880a251912e53ad03816e44e10c936`.
+- Trigger: **real** Vercel `vercel[bot] PR comment`. Drafts ON, merge gate ON, target fixed to PR #14's public preview; second trigger Disabled.
+- [TestSprite execution 7a1fa9d9](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/7a1fa9d9-18a6-4b97-bf58-a922595d05cf): **96 Passed, 0 Failed, 1 Blocked / 97**.
+- Blocked test: **Keyboard navigation and user feedback remain usable**. Its TestSprite run did not establish a successful natural Tab/focus/Enter path.
+- GitHub status: **`TestSprite V3: failure`**, `96/97 passed · 1 blocked`.
+- GitHub Ruleset 25749816: **Active**; `test-and-verify` and `TestSprite V3` are Required, no bypass list. PR #14 currently blocked, but also Draft.
 
-| Metric | Result |
-|---|---|
-| Total Test Cases | 97 |
-| Passed | 97 |
-| Failed | 0 |
-| Blocked | 0 |
-| Pass Rate | 100% |
+**Do not claim a green merge or a non-Draft check-blocking test.**
 
-These results were observed in a complete TestSprite production regression run. They do not automatically establish that the same tests passed against every GitHub pull request.
+## Independent keyboard browser evidence — different tool
 
-## Verified Capabilities
+[GitHub Actions run 40080749821](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821) tested natural Tab, Shift+Tab, Enter/Space on a local production build, the hosted PR preview, and production — **2 + 2 + 2 = 6/6 Passed**. [Source](https://github.com/allfridhosaragii/FlowGuard-AI/blob/audit/keyboard-natural-tab-20261024/tests/keyboard-natural-tab-audit.spec.ts). [Artifact](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821/artifacts/12555251397).
 
-- Controlled concurrent refund verification using synthetic fixtures
-- Vulnerable and corrected implementation comparisons
-- Synthetic SQL deadlock scenario and circular wait detection
-- Synthetic healthy stream scenario validation
-- GitHub pull request and code snippet risk analysis
-- Scoped findings, execution evidence, and proposed assertions
-- Responsive layout and keyboard accessibility testing
+These tests intentionally avoid `locator.focus()` or scripted clicking, unlike the former partial keyboard test. They do **not** convert the vendor case from Blocked to Passed or certify every WCAG criterion.
 
-## Verification Scope and Limitations
+## Historical TestSprite evidence
 
-- SQL deadlock and healthy stream demonstrations use first-party synthetic models.
-- External pull request findings are potential risks unless independently verified.
-- JWT authentication findings do not imply execution of a compatible authentication harness.
-- A passing regression suite does not guarantee the absence of all defects.
+| Execution | Result | Qualifier |
+|---|---|---|
+| **Production on Oct 23 (21:33 WIB)** | **97/97 Passed** | Historical production-only run, not latest PR |
+| **PR #13 preview** | **2 passed, 2 failed, 93 blocked / 97** | Protected Vercel preview required login |
+| **PR #14 Send Test Event** | **95 passed, 2 failed, 0 blocked / 97** | Simulated event; vendor says GitHub status always success for connectivity |
+| **PR #14 real Vercel event** | **96 passed, 0 failed, 1 blocked / 97** | Best genuine PR-scoped result, required check **failure** |
+| **Local/browser GitHub CI** | **118 Vitest + 57 Playwright passed** | Separate suite; not TestSprite |
 
-## Pull Request Automation Verification
+Vendor support email dated 24 Oct says simulated **Send Test Event** can overwrite a true failure status with `success`. Therefore never use it to prove a working merge gate.
 
-TestSprite successfully triggered an automated test run for GitHub PR #13 against the Vercel preview deployment.
+## Meaning of the demo findings
 
-### PR #13 Test Results
-- Total: 97
-- Passed: 2
-- Failed: 2
-- Blocked: 93
+The vulnerable refund fixture is a deliberately first-party synthetic demonstration of a race and is meant to return `VERIFIED_FAIL`. The corrected one is separately tested. SQL deadlock and healthy-stream fixtures are bounded synthetic models, **not** actual SQL databases or external message brokers. Third-party PR findings are POTENTIAL unless independently executed. Neural inference is off by default.
 
-The test run was affected by Vercel Authentication, which prevented automated access to the protected preview deployment.
+## Open item and next verification
 
-The preview was subsequently made accessible and successfully opened in an unauthenticated browser session.
+One keyboard case is still **Blocked** in TestSprite; engineering/support follow-up remains outstanding. Keep the failed required GitHub status as truthful evidence and avoid repeat paid runs without a changed hypothesis or official instructions. Need exact TestSprite email/name, updated credit balance, actual pinned Discord channel, and explicit owner approval before any submission.
 
-A complete TestSprite rerun could not be performed because the remaining credits were insufficient.
-
-The production regression result of 97/97 Passed remains valid independently and must not be represented as a successful PR-preview test run.
-
-### Additional CI Verification
-- Vitest: 118/118 Passed
-- Playwright: 57/57 Passed
-- TypeScript, Next.js build, and GitHub Actions checks completed successfully.
-
-Both TestSprite automation triggers are currently disabled to prevent additional credit-consuming runs.
-
-The temporary Vercel deployment protection exception for the s4-final preview has been removed.
-
-**Principle:** Evidence precedes verdicts.
+[Readiness](HACKATHON-SEASON-4-SUBMISSION.md) · [Evidence index](EVIDENCE-INDEX-S4-2026-10-24.md)

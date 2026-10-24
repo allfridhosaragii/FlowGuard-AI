@@ -9,14 +9,14 @@
 [![Vitest](https://img.shields.io/badge/Vitest-118%20Passing-success)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/Playwright-57%20Passing-success)](tests/e2e.spec.ts)
 
-> **Season 4 pre-submission status — 24 October 2026: NOT ready to submit.** Organizer Discord extended the deadline to **26 October 2026, 11:59 PM Pacific** (= **27 October 2026, 13:59 WIB**), with submission in Discord `#hackathon-s4-submissions`, **not Devpost**. [CI run 39985661853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39985661853) passed **118 Vitest + 57 Playwright**. Historical TestSprite **production** verification passed **97/97**, but **PR #13 preview** recorded **2 passed, 2 failed, 93 blocked**. The [required-check ruleset](https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816) remains **Disabled** and the two TestSprite triggers were last seen Disabled. See the [current evidence-first audit](docs/HACKATHON-SEASON-4-SUBMISSION.md). Do not interpret a passed production suite as a passed PR suite.
+> **Season 4 current audit — 24 October 2026, NOT submitted.** PR #14 genuinely triggered TestSprite on its public preview: **96 passed, 0 failed, 1 blocked** (97 total), with the GitHub **TestSprite V3 status correctly at failure**. The [main protection ruleset](https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816) is **Active** and requires both TestSprite V3 and test-and-verify; PR #14 remains **Draft** and blocked. [CI on PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459361) passed **118 Vitest + 57 Playwright**, and [independent natural keyboard testing](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821) passed **6/6** across local build, PR preview and production. A historical **production** TestSprite run with 97/97 is **not** the current PR result. See [readiness](docs/HACKATHON-SEASON-4-SUBMISSION.md).
 
 > **License status:** The previous README advertised MIT without a repository `LICENSE` file. Licensing remains undecided until the owner explicitly chooses and publishes it.
 
-🔗 **Canonical production URL (anonymous-access check pending)**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
+🔗 **Canonical public production URL**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
 📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
 
-**Alternative feature-branch preview**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/). The canonical production website is the URL above. PR #1 is merged into `main`.
+**Audited PR #14 preview (not production):** [https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app/). The preview is supported by a temporary Vercel Deployment Protection exception; do not remove it while the PR needs testing.
 
 ---
 
@@ -145,6 +145,22 @@ npm run test:watch
 
 ---
 
+## Current verified proof and honest limitations — 24 October 2026
+
+| Check | Observed | Boundary |
+|---|---|---|
+| [GitHub CI PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40078459361) | 118/118 Vitest; 57/57 Playwright; lint/TypeScript/build successful | Independent of TestSprite |
+| [Genuine PR #14 TestSprite](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/7a1fa9d9-18a6-4b97-bf58-a922595d05cf) | **96 passed, 0 failed, 1 blocked**; GitHub status **failure** | Not a green PR; keyboard-only case remains Blocked |
+| [Natural keyboard proof](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821) | **6/6 passed**: local production build, PR preview, and production | Separate Playwright tests, not a replacement for TestSprite |
+| [Main protection ruleset](https://github.com/allfridhosaragii/FlowGuard-AI/rules/25749816) | Active, requires `test-and-verify` and `TestSprite V3`; PR #14 currently blocked | Draft state also blocks merge |
+| [Security triage](docs/SECURITY-QUALITY-FINAL-AUDIT-2026-10-24.md) | Runtime dependency audit last reported zero, but 12 full/dev advisories, 18 Semgrep findings and one ZAP CSP warning remain disclosed | Scanner success does not imply zero findings |
+
+**Submission and identity:** A user-provided organizer announcement extended the deadline to Monday 26 October 2026 11:59 PM Pacific = Tuesday 27 October 13:59 WIB and named `#hackathon-s4-submissions`. The public [event webpage](https://www.testsprite.com/hackathon-s4) still has an older schedule/channel. Confirm the current pinned Discord message and the user's exact TestSprite display name/email before posting. No submission has been made by this audit.
+
+**Additional artifacts:** [current readiness](docs/HACKATHON-SEASON-4-SUBMISSION.md) · [security](docs/SECURITY-QUALITY-FINAL-AUDIT-2026-10-24.md) · [demo runbook](docs/DEMO-RUNBOOK-S4-2026-10-24.md) · [evidence index](docs/EVIDENCE-INDEX-S4-2026-10-24.md) · [unsent submission draft](docs/DISCORD-SUBMISSION-DRAFT-S4-2026-10-24.md).
+
+---
+
 ## ✅ Historical test evidence — 21 October 2026 (superseded by newer CI)
 
 - **GitHub Actions**: [run 39527734853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39527734853) — 78 Vitest tests passed, 43 Playwright browser tests passed, TypeScript and build passed, ESLint 0 errors (24 warnings).
@@ -199,7 +215,7 @@ npm run build
 1. **Install TestSprite GitHub App**:
    - Navigate to [TestSprite Console](https://www.testsprite.com/) and install the TestSprite GitHub App for `allfridhosaragii/FlowGuard-AI`.
 2. **Pull Request Workflow**:
-   - When enabled and correctly configured, TestSprite PR triggers can test matching accessible previews. **On the 24 October screenshots, both TestSprite triggers were Disabled.** Do not assume every new PR currently runs TestSprite.
+   - When enabled and correctly configured, TestSprite PR triggers can test matching accessible previews. **The Vercel PR-comment trigger is now Active** with drafts and merge gate ON, targeting PR #14's fixed docs preview; the alternate Vercel status trigger remains Disabled. This proves a real PR #14 loop but **does not yet establish correct dynamic URLs for every future PR**. Do not use Send Test Event: TestSprite Support confirmed its synthetic success can overwrite a real failure.
 3. **Assertions**:
    - TestSprite 3.0 can execute assertions directly against the `/api/v1/lab/verify` endpoint to validate state machine invariants.
 
