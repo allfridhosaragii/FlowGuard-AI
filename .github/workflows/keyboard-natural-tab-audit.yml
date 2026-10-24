@@ -72,6 +72,13 @@ jobs:
             }
           })().catch(err => { console.error('AUDIT_FAILED',err); process.exit(1); });
           NODE
+      - name: Fresh production dependency security audit (npm registry; no TestSprite)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Record full dev/build/test advisory totals (informational)
+        shell: bash
+        run: |
+          npm audit --json > "$RUNNER_TEMP/flowguard-full-npm-audit.json" || true
+          node -e 'const fs=require("fs");const p=process.env.RUNNER_TEMP+"/flowguard-full-npm-audit.json";try{const d=JSON.parse(fs.readFileSync(p,"utf8"));console.log("FULL_ADVISORY_TOTALS",JSON.stringify(d.metadata?.vulnerabilities||{}));for(const [name,v] of Object.entries(d.vulnerabilities||{})){console.log("ADVISORY_SUMMARY",JSON.stringify({name,severity:v.severity,isDirect:v.isDirect,fixAvailable:!!v.fixAvailable}));}}catch(err){console.log("FULL_AUDIT_UNAVAILABLE",String(err));process.exitCode=1;}'
       - name: Upload traces and screenshots
         if: always()
         uses: actions/upload-artifact@v4
