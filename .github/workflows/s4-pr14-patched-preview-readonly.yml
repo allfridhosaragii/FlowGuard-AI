@@ -1,0 +1,66 @@
+name: S4 PR14 Patched Preview Proof (no TestSprite)
+
+on:
+  push:
+    branches:
+      - audit/s4-pr14-patched-preview-proof-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  pr14-public-and-ux002:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Verify PR 14 Vercel preview is publicly accessible
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app'
+          for path in / /analyze /lab /about /api/v1/health; do
+            url="$BASE$path"
+            code="$(curl -sS -L --max-time 25 --retry 2 --retry-delay 3 \
+                   -o /tmp/fg-pr14-body --write-out '%{http_code}' "$url")"
+            final="$(curl -sS -L -I --max-time 25 -o /dev/null --write-out '%{url_effective}' "$url")"
+            echo "PR14_ANONYMOUS_GET HTTP=$code PATH=$path FINAL=$final"
+            test "$code" = "200" || exit 1
+            if [[ "$final" == https://vercel.com/login* ]]; then
+              echo "VERCEL_LOGIN_BLOCKED"
+              exit 1
+            fi
+            if grep -qiE 'Vercel Authentication|Authentication Required|Login to Vercel' /tmp/fg-pr14-body; then
+              echo "VERCEL_AUTH_PAGE"
+              exit 1
+            fi
+            if [ "$path" = "/api/v1/health" ]; then
+              node -e 'const fs=require("node:fs");const j=JSON.parse(fs.readFileSync("/tmp/fg-pr14-body","utf8"));if(j.status!=="ok")process.exit(1);console.log("HEALTH_OK")'
+            else
+              grep -qi 'FlowGuard AI' /tmp/fg-pr14-body || exit 1
+            fi
+          done
+          echo "PR14_ANONYMOUS_PUBLIC_OK"
+      - uses: actions/checkout@v4
+        with:
+          ref: 77fb02dd55eeb52b304dfbe8b227fceaba356e40
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies and Chromium Firefox WebKit
+        run: |
+          npm ci --no-fund --no-audit
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Keyboard UX-002 regression against PR14 Vercel preview
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-pr14-patched-preview-readonly-ux002
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
