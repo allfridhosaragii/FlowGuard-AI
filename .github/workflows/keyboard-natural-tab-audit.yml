@@ -28,6 +28,14 @@ jobs:
         run: npm run build
       - name: Execute real keyboard proof without TestSprite credits
         run: npx playwright test tests/keyboard-natural-tab-audit.spec.ts --config=playwright.config.ts --project=chromium --workers=1 --retries=0
+      - name: Verify the actual public PR 14 Vercel preview with keyboard only
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+        run: npx playwright test tests/keyboard-natural-tab-audit.spec.ts --config=playwright.config.ts --project=chromium --workers=1 --retries=0
+      - name: Verify the current production deployment with keyboard only
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-smoky.vercel.app
+        run: npx playwright test tests/keyboard-natural-tab-audit.spec.ts --config=playwright.config.ts --project=chromium --workers=1 --retries=0
       - name: Upload traces and screenshots
         if: always()
         uses: actions/upload-artifact@v4
