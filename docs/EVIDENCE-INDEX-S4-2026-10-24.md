@@ -26,5 +26,6 @@ All links below are evidence by scope. **Do not equate production 97/97 with the
 | Security/quality audit | SECURITY-QUALITY-FINAL-AUDIT-2026-10-24.md | Honest security findings and risk disposition |
 | Demo runbook | DEMO-RUNBOOK-S4-2026-10-24.md | Genuine demo flow (video not recorded) |
 | Discord draft | DISCORD-SUBMISSION-DRAFT-S4-2026-10-24.md | **NOT SENT**, account placeholders |
+| Current Go/No-Go & support follow-up | S4-SUBMISSION-GO-NO-GO-AND-SUPPORT-FOLLOWUP-2026-10-24.md | Updated contest requirements, owner-held decisions, and confirmed support escalation |
 
 **Outstanding owner inputs:** account TestSprite display name/email, pinned Discord channel, updated credit balance, acceptance strategy for Blocked test, owner license decision, and explicit submission authorization. **There is no evidence the final submission has already been posted.**

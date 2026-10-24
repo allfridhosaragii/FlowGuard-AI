@@ -64,6 +64,9 @@ Full breakdown: [security/quality audit](SECURITY-QUALITY-FINAL-AUDIT-2026-10-24
 
 Use [honest four-minute demo runbook](DEMO-RUNBOOK-S4-2026-10-24.md), [verification ledger](TESTSPRITE_S4_FINAL_VERIFICATION.md), and [evidence index](EVIDENCE-INDEX-S4-2026-10-24.md). Video not yet captured or uploaded; optional in contest requirements.
 
+
+**Support follow-up update (24 Oct):** A new response to the existing TestSprite Support keyboard case was actually sent with [6/6 independent Chromium proof](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40080749821), the genuine 96/97 PR run, and a request for a runner diagnosis, a supported way to preserve the same keyboard assertions, and organizer clarification on entry eligibility. **No new engineering resolution or organizer permission has been confirmed.** See [go/no-go and support ledger](S4-SUBMISSION-GO-NO-GO-AND-SUPPORT-FOLLOWUP-2026-10-24.md).
+
 ## 7. Blocking decisions before final submission
 
 - [x] Public repo/live deployment, checked production/preview user journeys.
