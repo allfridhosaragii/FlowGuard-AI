@@ -1,0 +1,63 @@
+name: Zod 4 compatibility proof (isolated, no PR triggers)
+
+on:
+  push:
+    branches:
+      - docs/s4-final-quality-audit-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  zod4-proof:
+    name: Security fix feasibility for Zod 4.6.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated audit code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install current locked dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Temporarily install patched Zod v4 in runner only
+        run: |
+          npm install zod@4.6.7 --save-exact --no-fund --no-audit
+          node -e "console.log('TESTING_ZOD_VERSION',require('zod/package.json').version)"
+          git diff --stat -- package.json package-lock.json
+      - name: Check patched production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Validate TypeScript after major upgrade
+        id: typescript
+        continue-on-error: true
+        run: npx tsc --noEmit
+      - name: Run unit and integration suite with Zod v4
+        id: unit
+        continue-on-error: true
+        run: npm test
+      - name: Run lint with Zod v4
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+      - name: Build app with Zod v4
+        id: build
+        continue-on-error: true
+        run: npm run build
+      - name: Record honest compatibility outcome
+        if: always()
+        shell: bash
+        env:
+          TSC_OUTCOME: ${{ steps.typescript.outcome }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          printf 'ZOD4_COMPAT_OUTCOME tsc=%s unit=%s lint=%s build=%s\n' "$TSC_OUTCOME" "$UNIT_OUTCOME" "$LINT_OUTCOME" "$BUILD_OUTCOME"
+          if [ "$TSC_OUTCOME" != success ] || [ "$UNIT_OUTCOME" != success ] || [ "$LINT_OUTCOME" != success ] || [ "$BUILD_OUTCOME" != success ]; then
+            echo 'ZOD4_COMPAT_NOT_READY: Do not ship major upgrade without addressing failures.'
+            exit 1
+          fi
+          echo 'ZOD4_COMPAT_STATIC_AND_UNIT_GREEN. Browser regression suite is still required before shipping.'
