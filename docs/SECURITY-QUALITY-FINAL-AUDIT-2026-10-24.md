@@ -22,6 +22,7 @@ A 23 Oct `npm audit --omit=dev --audit-level=high` recorded **0 production vulne
 
 **Decision:** keep Next.js/React/Sharp patched versions, plan an **isolated Zod v4 compatibility migration**, audit all `z.array/z.map/z.set` schemas and preserve validation error/API semantics. The new High finding now takes precedence over earlier 23 Oct claims of zero production advisories. No high-risk breaking dependency upgrade should reach the submission branch without full TypeScript, lint, Vitest, Playwright and protected required-check evidence. Separately triage the 12 previously reported full/dev advisories.
 
+**Validated nonproduction remediation (24 Oct):** [isolated CI run 40091665453](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091665453) temporarily installed patched **Zod 4.6.7** and applied three narrow Zod 4 API compatibility edits. The *patched runner* reported **zero production npm audit vulnerabilities**, **118/118 Vitest**, **57/57 Playwright**, TypeScript/lint/build pass. A [review artifact](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091665453/artifacts/12559216750) contains the modified lockfile/package manifest and three source files. **No production branch or PR #14 was updated**, so the current committed application still has the HIGH Zod advisory. [Full patch verification and release steps](ZOD4-SECURITY-PATCH-INDEPENDENT-VERIFICATION-2026-10-24.md).
 ## 3. API/data isolation and cost controls
 
 Verified in source:

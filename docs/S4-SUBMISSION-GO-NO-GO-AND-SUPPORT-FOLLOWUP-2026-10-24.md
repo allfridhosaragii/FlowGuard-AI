@@ -41,6 +41,7 @@ The message supplied:
 
 **Email successfully sent, but no specific vendor reply to this new evidence has yet been verified** as part of this audit. Do not claim Holly has replied or approved an exception.
 
+**Mitigation ready for owner-controlled release:** [Zod 4.6.7 isolated migration](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091665453) passed 118 Vitest + 57 Playwright + TypeScript + lint + build + zero production npm audit advisories using three precise compatibility edits. **Not deployed; security item stays OPEN until the source and lockfile are applied to a dedicated branch and verified under required checks.** [Patch recipe](ZOD4-SECURITY-PATCH-INDEPENDENT-VERIFICATION-2026-10-24.md).
 ## Go/No-Go matrix
 
 | Condition | Required state before claiming submission-ready | At snapshot |

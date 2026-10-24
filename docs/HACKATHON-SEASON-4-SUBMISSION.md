@@ -60,6 +60,7 @@ Because PR #14 is **Draft**, it also cannot merge for that independent reason. W
 
 Full breakdown: [security/quality audit](SECURITY-QUALITY-FINAL-AUDIT-2026-10-24.md).
 
+**Patch-preparation update (24 Oct):** The new High Zod advisory has a **fully tested nonproduction remediation candidate**: [run 40091665453](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091665453) passed npm production audit (0), 118 Vitest, 57 Playwright, TypeScript, lint and build with Zod 4.6.7 plus three compatibility edits. [Artifact and exact patch recipe](ZOD4-SECURITY-PATCH-INDEPENDENT-VERIFICATION-2026-10-24.md). **Still outstanding:** owner-approved commit/release and a genuine TestSprite PR check on the exact future application revision. Do not call production patched or TestSprite green.
 ## 6. Demo and evidence
 
 Use [honest four-minute demo runbook](DEMO-RUNBOOK-S4-2026-10-24.md), [verification ledger](TESTSPRITE_S4_FINAL_VERIFICATION.md), and [evidence index](EVIDENCE-INDEX-S4-2026-10-24.md). Video not yet captured or uploaded; optional in contest requirements.

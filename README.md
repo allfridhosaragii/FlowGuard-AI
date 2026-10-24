@@ -145,6 +145,7 @@ npm run test:watch
 
 ---
 
+> **Security follow-up (24 Oct):** Fresh production audit found **one High Zod advisory** in the currently committed tree. A fully isolated [Zod 4.6.7 compatibility run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40091665453) with three narrow API adjustments passed **0 production npm audit advisories, 118 Vitest, 57 Playwright, TypeScript, lint and build**, but it is **NOT YET deployed**. [Patch review and rollout boundaries](docs/ZOD4-SECURITY-PATCH-INDEPENDENT-VERIFICATION-2026-10-24.md).
 ## Current verified proof and honest limitations — 24 October 2026
 
 | Check | Observed | Boundary |
