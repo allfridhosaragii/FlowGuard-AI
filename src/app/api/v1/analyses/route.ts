@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const validated = AnalysisRequestSchema.safeParse(body);
 
     if (!validated.success) {
-      const firstError = validated.error.errors[0]?.message || 'Validation failed for analysis request';
+      const firstError = validated.error.issues[0]?.message || 'Validation failed for analysis request';
       return NextResponse.json(
         {
           error: {
