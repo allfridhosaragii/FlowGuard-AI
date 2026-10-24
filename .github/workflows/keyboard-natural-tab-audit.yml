@@ -36,6 +36,42 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: https://flowguard-ai-smoky.vercel.app
         run: npx playwright test tests/keyboard-natural-tab-audit.spec.ts --config=playwright.config.ts --project=chromium --workers=1 --retries=0
+      - name: Read-only production and PR preview smoke (GET only; no TestSprite)
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const targets = [
+            'https://flowguard-ai-smoky.vercel.app',
+            'https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app',
+          ];
+          const pages = ['/', '/lab', '/analyze', '/about'];
+          (async () => {
+            for (const base of targets) {
+              for (const path of pages) {
+                const response = await fetch(base + path, { signal: AbortSignal.timeout(20000) });
+                assert.equal(response.status, 200, base + path + ': unexpected status');
+                assert.match(response.headers.get('content-type') || '', /text\/html/);
+                assert(!response.url.includes('/login'), base + path + ': redirected to login');
+                if (path === '/') {
+                  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+                  assert.equal(response.headers.get('x-frame-options'), 'DENY');
+                  assert((response.headers.get('content-security-policy') || '').includes("default-src 'self'"));
+                  assert((response.headers.get('strict-transport-security') || '').includes('max-age='));
+                }
+                const html = await response.text();
+                assert(html.includes('FlowGuard AI'), base + path + ': expected app identity not found');
+                console.log('READONLY_PASS', response.status, base + path);
+              }
+              const health = await fetch(base + '/api/v1/health', { signal: AbortSignal.timeout(20000) });
+              assert.equal(health.status, 200, base + '/api/v1/health');
+              assert((health.headers.get('cache-control') || '').includes('no-store'));
+              const data = await health.json();
+              assert.equal(data.status, 'ok');
+              console.log('HEALTH_PASS', base, JSON.stringify({status:data.status,modelFamily:data.modelFamily,aiModelConfigured:data.aiModelConfigured}));
+            }
+          })().catch(err => { console.error('AUDIT_FAILED',err); process.exit(1); });
+          NODE
       - name: Upload traces and screenshots
         if: always()
         uses: actions/upload-artifact@v4
