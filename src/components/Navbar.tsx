@@ -10,6 +10,17 @@ export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
+  // On a client-side route transition the Navbar persists, and the previously
+  // activated navigation link otherwise retains focus. Move keyboard focus to
+  // the newly rendered main region; don't steal focus on initial page load.
+  const previousPathnameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (previousPathnameRef.current !== null && previousPathnameRef.current !== pathname) {
+      document.getElementById('main-content')?.focus({ preventScroll: true });
+    }
+    previousPathnameRef.current = pathname;
+  }, [pathname]);
+
 
   const navLinks = [
     { href: '/lab', label: 'Verification Lab', icon: FlaskConical },
