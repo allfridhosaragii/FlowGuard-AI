@@ -27,7 +27,7 @@ jobs:
             status="$(curl -fsSL --retry 3 --retry-delay 3 --max-time 30 -o /tmp/fg-page -w '%{http_code}' "$BASE$path")"
             test "$status" = 200
             if [ "$path" = /api/v1/health ]; then
-              node -e 'const j=require("/tmp/fg-page");if(j.status!=="ok")process.exit(1)'
+              node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/fg-page","utf8"));if(j.status!=="ok")process.exit(1)'
             else
               grep -qi 'FlowGuard AI' /tmp/fg-page
               ! grep -qi 'Vercel Authentication' /tmp/fg-page
