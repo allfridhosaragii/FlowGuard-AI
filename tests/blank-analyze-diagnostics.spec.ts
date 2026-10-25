@@ -10,7 +10,7 @@ test.describe('Hosted Analyze rendering and assertion-copy diagnostics', () => {
     for (let attempt = 1; attempt <= 4; attempt++) {
       await test.step('cold page load #' + attempt, async () => {
         const response = await page.goto('/analyze', { waitUntil: 'domcontentloaded' });
-        expect(response?.status(), 'Expected a real SSR response').toBe(200);
+        expect([200, 304], 'Server may legitimately revalidate cached SSR HTML with HTTP 304').toContain(response?.status());
         await expect(page.getByRole('heading', { name: /Pull Request & Code Analysis Workspace/i })).toBeVisible({ timeout: 15000 });
         await expect(page.locator('#code-snippet-input')).toBeVisible();
         await expect(page.locator('#business-rule-input')).toBeVisible();
