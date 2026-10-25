@@ -3,7 +3,7 @@ name: S4 Blank Analyze / Assertion Diagnostics (No TestSprite)
 on:
   push:
     branches: [audit/s4-blank-page-assertion-investigation-20261025]
-    paths: [.github/workflows/s4-blank-assertion-diagnostics.yml]
+    paths: [.github/workflows/s4-blank-assertion-diagnostics.yml, tests/blank-analyze-diagnostics.spec.ts]
 
 permissions:
   contents: read
