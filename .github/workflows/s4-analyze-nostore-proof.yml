@@ -1,0 +1,51 @@
+name: S4 Analyze No-Store / Copy Resilience Proof (isolated, no TestSprite)
+on:
+  push:
+    branches: [audit/s4-blank-page-assertion-investigation-20261025]
+    paths: [.github/workflows/s4-analyze-nostore-proof.yml]
+permissions:
+  contents: read
+jobs:
+  local-prod:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Start same Next production build under localhost HTTPS with original CSP
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout /tmp/ux002-key.pem -out /tmp/ux002-cert.pem -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+          npm run start -- --hostname 127.0.0.1 --port 3000 >/tmp/s4-nostore-next.log 2>&1 &
+          UX002_TLS_KEY=/tmp/ux002-key.pem UX002_TLS_CERT=/tmp/ux002-cert.pem node scripts/ux002-tls-proxy.mjs >/tmp/s4-nostore-proxy.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -kfsS https://localhost:3443/api/v1/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -kfsS https://localhost:3443/api/v1/health
+          curl -kfsSI https://localhost:3443/analyze | grep -i 'cache-control:.*no-store'
+      - name: Diagnose fresh HTML and assertion-copy in Chromium Firefox WebKit
+        env:
+          PLAYWRIGHT_BASE_URL: https://localhost:3443
+          CI: 'true'
+        run: npx playwright test tests/blank-analyze-diagnostics.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Preserve browser traces and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-analyze-nostore-browser-proof
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
