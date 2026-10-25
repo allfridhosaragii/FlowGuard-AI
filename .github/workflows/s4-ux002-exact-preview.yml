@@ -31,16 +31,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for attempt in {1..12}; do
-            if curl --fail --location --silent --show-error --max-time 25 "${PLAYWRIGHT_BASE_URL}/analyze" \
-              | grep -Fq 'Tab past the sample buttons to enter code'; then
-              echo "Verified target deployment contains the PR-specific code guidance."
+          for attempt in {1..6}; do
+            http_status="$(curl --location --silent --show-error --max-time 25 \
+              --output "$RUNNER_TEMP/flowguard-preview.html" --write-out '%{http_code}' \
+              "${PLAYWRIGHT_BASE_URL}/analyze")"
+            echo "Preview response: HTTP $http_status; bytes: $(wc -c < "$RUNNER_TEMP/flowguard-preview.html")"
+            if grep -Fq 'id="code-snippet-help"' "$RUNNER_TEMP/flowguard-preview.html" \
+              && grep -Fq 'Tab past the sample buttons' "$RUNNER_TEMP/flowguard-preview.html"; then
+              echo "Verified target deployment contains the PR-specific accessibility improvement."
               exit 0
             fi
-            echo "Waiting for actual updated branch preview (${attempt}/12)"
+            if [ "$attempt" -eq 1 ]; then
+              grep -oE '<title>[^<]{0,160}</title>' "$RUNNER_TEMP/flowguard-preview.html" | head -1 || true
+              grep -oE 'Authentication Required|DEPLOYMENT_NOT_FOUND|code-snippet-help|Pull Request &amp; Code' "$RUNNER_TEMP/flowguard-preview.html" | head -4 || true
+            fi
+            echo "Not yet at expected version (${attempt}/6)"
             sleep 12
           done
-          echo "::error::The hosted preview does not contain the updated code; refuse a false-green test." >&2
+          echo "::error::Hosted preview did not prove current source; no green assertion may be reported." >&2
           exit 1
       - name: Real hosted Chromium keyboard and validation regression
         run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --grep 'UX002-REGRESSION-' --project=chromium
