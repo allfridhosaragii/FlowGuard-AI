@@ -1,0 +1,58 @@
+name: S4 Hosted PR14 Analyze Cache & Copy Proof (no TestSprite)
+on:
+  push:
+    branches: [audit/s4-blank-page-assertion-investigation-20261025]
+    paths: [.github/workflows/s4-hosted-analyze-nostore-20261025.yml]
+permissions:
+  contents: read
+jobs:
+  hosted-cache:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Confirm PR14 preview is Ready and Analyze sends no-store, no blank page
+        shell: bash
+        env:
+          BASE: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 24); do
+            status="$(curl -sS -L --max-time 20 -o /tmp/fg-s4-page -w '%{http_code}' "$BASE/analyze" || true)"
+            headers="$(curl -sSI -L --max-time 20 "$BASE/analyze" || true)"
+            if [ "$status" = 200 ] && grep -qi 'Pull Request' /tmp/fg-s4-page && printf '%s\n' "$headers" | grep -qi 'cache-control:.*no-store'; then
+              echo 'PR14_HOSTED_ANALYZE_READY_HTTP200_NOSTORE'
+              break
+            fi
+            if [ "$i" = 24 ]; then echo 'PR14_PREVIEW_NOT_READY_OR_MISSING_NOSTORE'; exit 1; fi
+            sleep 5
+          done
+          for path in / /analyze /lab /about /api/v1/health; do
+            curl --fail --silent --show-error --location --max-time 30 "$BASE$path" -o /tmp/fg-s4-check
+            if [ "$path" = /api/v1/health ]; then
+              node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/fg-s4-check","utf8"));if(j.status!=="ok")process.exit(1)'
+            else
+              grep -qi 'FlowGuard AI' /tmp/fg-s4-check
+            fi
+            echo "S4_READY_PROBE_OK $path"
+          done
+      - name: Hosted no-store and actual assertion copy, 3 browser engines
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+          CI: 'true'
+        run: npx playwright test tests/blank-analyze-diagnostics.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-hosted-analyze-cache-copy
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
