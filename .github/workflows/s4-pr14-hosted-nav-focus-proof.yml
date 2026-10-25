@@ -1,0 +1,50 @@
+name: S4 New PR14 Preview Native Focus Proof (read-only; no TestSprite)
+on:
+  push:
+    branches: [staging/s4-nav-to-form-zod4-20261025]
+    paths: [.github/workflows/s4-pr14-hosted-nav-focus-proof.yml]
+permissions:
+  contents: read
+jobs:
+  live-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Confirm genuine anonymous PR14 preview and health
+        shell: bash
+        env:
+          BASE: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+        run: |
+          set -euo pipefail
+          for path in / /analyze /lab /about /api/v1/health; do
+            status="$(curl -fsSL --retry 3 --retry-delay 3 --max-time 30 -o /tmp/fg-page -w '%{http_code}' "$BASE$path")"
+            test "$status" = 200
+            if [ "$path" = /api/v1/health ]; then
+              node -e 'const j=require("/tmp/fg-page");if(j.status!=="ok")process.exit(1)'
+            else
+              grep -qi 'FlowGuard AI' /tmp/fg-page
+              ! grep -qi 'Vercel Authentication' /tmp/fg-page
+            fi
+            echo "PR14_HOSTED_GENUINE_APP_200 $path"
+          done
+      - name: Real browser keyboard nav-to-form on new PR14 Vercel alias
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+          CI: 'true'
+        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Store independent browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-pr14-hosted-native-nav-focus-20261025
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
