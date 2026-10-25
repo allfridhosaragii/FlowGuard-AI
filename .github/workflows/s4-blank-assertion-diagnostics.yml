@@ -1,0 +1,55 @@
+name: S4 Blank Analyze / Assertion Diagnostics (No TestSprite)
+
+on:
+  push:
+    branches: [audit/s4-blank-page-assertion-investigation-20261025]
+    paths: [.github/workflows/s4-blank-assertion-diagnostics.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  hosted-diagnostics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Install all browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Confirm preview is real app, not empty or Vercel auth
+        shell: bash
+        env:
+          BASE: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+        run: |
+          set -euo pipefail
+          for path in / /analyze /lab /about /api/v1/health; do
+            status=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --max-time 30 -o /tmp/s4-blank-probe -w '%{http_code}' "$BASE$path")
+            test "$status" = 200
+            if [ "$path" = /api/v1/health ]; then
+              node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("/tmp/s4-blank-probe","utf8"));if(d.status!=="ok")process.exit(1)'
+            else
+              grep -qi 'FlowGuard AI' /tmp/s4-blank-probe
+              ! grep -qi 'Vercel Authentication' /tmp/s4-blank-probe
+            fi
+            echo "S4_NONEMPTY_PREVIEW_HTTP_200 $path"
+          done
+      - name: Cold loads + client navigation + assertion copy on hosted production preview
+        env:
+          PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-docs-15dd3a-pedoprimasaragi-gmailcoms-projects.vercel.app
+          CI: 'true'
+        run: npx playwright test tests/blank-analyze-diagnostics.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Upload browser trace evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-analyze-blank-and-copy-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
