@@ -1,0 +1,54 @@
+name: Season 4 UX002 Exact Preview Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/app/analyze/page.tsx'
+      - 'tests/ux002-full-keyboard-audit.spec.ts'
+      - '.github/workflows/s4-ux002-exact-preview.yml'
+  workflow_dispatch:
+
+jobs:
+  exact-preview-native-keyboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BASE_URL: https://flowguard-ai-git-fix-9ccffa-pedoprimasaragi-gmailcoms-projects.vercel.app
+    steps:
+      - name: Checkout exact change
+        uses: actions/checkout@v4
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify deployed URL includes the current accessibility improvement
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..12}; do
+            if curl --fail --location --silent --show-error --max-time 25 "${PLAYWRIGHT_BASE_URL}/analyze" \
+              | grep -Fq 'Tab past the sample buttons to enter code'; then
+              echo "Verified target deployment contains the PR-specific code guidance."
+              exit 0
+            fi
+            echo "Waiting for actual updated branch preview (${attempt}/12)"
+            sleep 12
+          done
+          echo "::error::The hosted preview does not contain the updated code; refuse a false-green test." >&2
+          exit 1
+      - name: Real hosted Chromium keyboard and validation regression
+        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --grep 'UX002-REGRESSION-' --project=chromium
+      - name: Upload independent traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux002-hosted-new-branch-browser-evidence
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
