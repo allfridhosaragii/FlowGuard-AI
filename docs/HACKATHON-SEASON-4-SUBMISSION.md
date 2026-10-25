@@ -1,5 +1,7 @@
 # FlowGuard AI — TestSprite Hackathon Season 4 | Pre-submission Evidence & Readiness
 
+> **HISTORICAL SNAPSHOT, NOT CURRENT STATUS (updated 25 Oct 2026).** This document retains the 24 October audit for traceability, including then-current PR and ruleset fields that are now outdated. The authoritative latest evidence is [Final Security & Quality Audit, 25 Oct](S4-FINAL-SECURITY-QUALITY-AUDIT-2026-10-25.md) and the current branch README. PR #14 now carries the keyboard patch and has an actual **96 Passed / 0 Failed / 1 Blocked** TestSprite V3 run with a correctly failing required check. The main ruleset is **Active**. Zod 4.6.7 is only a tested isolated branch candidate; main/production have not received it.
+
 > **Document status:** Working audit draft, updated 24 October 2026. **NOT a submitted entry, approval, or proof of complete compliance.**
 >
 > **Evidence hierarchy:** Official rules and organizer announcements; GitHub commit/status/check artifacts; dated TestSprite reports; user-supplied dashboard screenshots. Where direct access or a fresh test is unavailable, the issue remains **unverified**.

@@ -169,3 +169,33 @@ test('UX002-SCENARIO: keyboard focus and live feedback survive slow synthetic sc
   await expect(page.getByTestId('scenario-audit-results')).toContainText('HIGH RISK');
   expect(dispatched).toBe(1);
 });
+
+test('UX002-NAV-TO-FORM: header PR Analysis Enter restores focus to the new form through Tab', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Main Navigation' });
+  const analysis = nav.getByRole('link', { name: 'PR Analysis', exact: true });
+  let reached = false;
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press('Tab');
+    reached = await analysis.evaluate(el => document.activeElement === el);
+    if (reached) break;
+  }
+  expect(reached, 'Tab must reach PR Analysis in the navigation').toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/analyze$/);
+  await expect(page.locator('#main-content')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#tab-code-snippet')).toBeFocused();
+  for (const id of [
+    'tab-github-pr', 'btn-preset-payment', 'btn-preset-jwt', 'btn-preset-clean',
+    'code-snippet-input', 'business-rule-input', 'btn-launch-analysis',
+  ]) {
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#' + id)).toBeFocused();
+  }
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#code-snippet-error')).toContainText(
+    'Code snippet is required and cannot be empty.'
+  );
+});
