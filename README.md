@@ -1,209 +1,250 @@
-# FlowGuard AI 🛡️
+# 🛡️ FlowGuard AI
 
-> **AI-Powered Bug Hunting & Behavioral Risk Detection Platform**  
-> *Don't just review code. Prove it works.*  
-> Built for **TestSprite Hackathon Season 4**.
+**Don't just review code. Investigate what could go wrong — and know what the evidence actually proves.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Deployment](https://img.shields.io/badge/Vercel-Production%20Live-black?logo=vercel)](https://flowguard-ai-smoky.vercel.app/)
-[![Build Status](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-78%20Passing-success)](tests/)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-43%20Passing-success)](tests/e2e.spec.ts)
+> **FlowGuard AI** is a browser-based behavioral-risk analysis and verification playground. It compares code changes with business rules, surfaces *potential* failures, prepares verification scenarios, and demonstrates concurrency failures using controlled, executable first-party fixtures.
 
-🔗 **Live Production URL (latest submission build)**: [https://flowguard-ai-smoky.vercel.app/](https://flowguard-ai-smoky.vercel.app/)  
-📦 **GitHub Repository**: [https://github.com/allfridhosaragii/FlowGuard-AI](https://github.com/allfridhosaragii/FlowGuard-AI)
+[**🚀 Launch the live app**](https://flowguard-ai-smoky.vercel.app/) · [**🧪 Try the Verification Lab**](https://flowguard-ai-smoky.vercel.app/lab) · [**🔍 Analyze a PR or snippet**](https://flowguard-ai-smoky.vercel.app/analyze) · [**✅ See the official TestSprite run**](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc)
 
-**Alternative feature-branch preview**: [https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/](https://flowguard-ai-git-feat-1b3908-pedoprimasaragi-gmailcoms-projects.vercel.app/). The canonical production website is the URL above. PR #1 is merged into `main`.
+| Verified milestone | Evidence | Scope |
+| :--- | :--- | :--- |
+| **97 passed · 0 failed · 0 blocked** | [Official TestSprite V3 execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc) | **PR #14 preview at `7324ee5`, not current `main`** |
+| **118 unit/integration + 65 Chromium E2E + 24 keyboard checks passed** | [Independent verification workflow](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40186922899) | PR #14-related isolated regression job |
+| **Genuine in-window GitHub App PR** | [PR #1, opened Oct 20](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) | Season 4 eligibility chronology, **not** the 97/97 run |
 
----
+![Actual FlowGuard AI landing page](docs/assets/readme/homepage-desktop.webp)
 
-## 🌟 The Problem FlowGuard AI Solves
+<details><summary><strong>View the mobile experience</strong></summary>
 
-Traditional pull request code reviews and static linters check syntax, types, and formatting, but miss critical runtime regressions:
-- Duplicate refunds caused by concurrent payment retry races
-- Missing idempotency keys on settlement requests
-- Authorization logic bypasses
-- Invalid state machine transitions under network jitter
+![Actual mobile homepage screenshot](docs/assets/readme/homepage-mobile.webp)
 
-FlowGuard AI bridges the gap between **code review** and **runtime verification**:
-1. **Agent A (Requirement Analyst)**: Extracts formal mathematical invariants from human business rules with strict domain isolation and context cross-validation.
-2. **Agent B (Risk Hunter)**: Analyzes PR diffs for race-condition windows and non-atomic state mutations (marked strictly as `POTENTIAL`).
-3. **Agent C (Verification Planner)**: Synthesizes reproducible test specifications and **TestSprite 3.0** assertions targeting executable verification endpoints.
-4. **Controlled Verification Lab**: Executes real concurrent asynchronous requests against target state machines, proving whether an invariant holds or fails.
+</details>
 
----
+## Why we care: behind a software failure is a real person
 
-## 🚀 Live Application Routes
+Software reliability isn't an abstract engineering scoreboard. Sometimes a payment appears cancelled while a balance has decreased. Sometimes a customer cannot access money they expected to have available. These are **public reports of user experiences**, not independently established diagnoses of backend code defects.
 
-| Route | Description |
-|---|---|
-| [`/`](https://flowguard-ai-smoky.vercel.app/) | **Landing Page** with core value proposition, static vs behavioral comparison, and live health status. |
-| [`/lab`](https://flowguard-ai-smoky.vercel.app/lab) | **Controlled Verification Lab**: Toggle between vulnerable and fixed refund state machines, configure concurrency (1–5 concurrent asynchronous requests), run real parallel requests, and inspect execution evidence. |
-| [`/analyze`](https://flowguard-ai-smoky.vercel.app/analyze) | **PR & Code Analysis Workspace**: Submit a public GitHub PR URL or code diff + business rule to run the 3-agent pipeline. |
-| [`/about`](https://flowguard-ai-smoky.vercel.app/about) | **Architecture & Security**: Invariant formal definitions, state machine progression, and security isolation rules. |
+| Publicly reported experience | What it illustrates | Primary source |
+| :--- | :--- | :--- |
+| An Indonesian user said a QRIS-funded in-app purchase was marked **cancelled** although their mobile-banking balance had been debited. | A payment's customer-facing state can differ across systems; resolving the discrepancy matters to real people. | [r/indotech, November 2025](https://www.reddit.com/r/indotech/comments/1osvnyi/jebakan_betmen_apa_ada_yang_pernah_gagal/) |
+| An Uber Eats customer described apparently duplicated transactions and temporarily unavailable funds; participants discussed whether one entry was an **authorization hold** rather than a second settled charge. | Even an unresolved or held transaction can undermine trust and liquidity. | [r/UberEATS, April 2026](https://www.reddit.com/r/UberEATS/comments/1sn6soa/uber_this_is_ridiculous/) |
+| A Medusa contributor reported a refund-retry path that could use different idempotency keys after provider errors. | Retry behavior and business state transitions deserve explicit review. The risk of double refund is **conditional**, not proof that customers were refunded twice. | [medusajs/medusa issue #16681](https://github.com/medusajs/medusa/issues/16681) |
 
----
+**What these links do *not* prove:** that the reported consumer incidents share one root cause; that any commenter requested or endorses FlowGuard AI; or that this app prevented their losses. They are **problem-context evidence**, not product-market-fit research or testimonials.
 
-## 🔌 API Endpoints (v1)
+For the engineering rationale, see [Stripe's idempotent-request API documentation](https://docs.stripe.com/api/idempotent_requests) and [Google's SRE workbook on canary releases](https://sre.google/workbook/canarying-releases/). They explain why retried operations need careful identity/semantics and why repeatable automated checks matter during software changes.
 
-- `GET /api/v1/health`: System status, build version, and configured subsystem flags.
-- `POST /api/v1/lab/verify`: Executes the controlled verification test harness with bounded concurrent asynchronous requests.
-- `POST /api/v1/analyses`: Runs the 3-agent orchestration pipeline on GitHub PR diffs or code inputs.
+## The practical gap: valid code can still break a business rule
 
----
+A type checker can approve two syntactically valid requests, while a non-atomic payment handler still allows a duplicate side effect. Existing linters, code review, integration tests, and dedicated test platforms all matter; **FlowGuard AI complements them** by asking a different question:
 
-## 🤖 AI Provider Architecture & Honesty Guarantees
+> *Does this proposed code change threaten a business invariant — and what evidence would be required to confirm or reject the concern?*
 
-FlowGuard AI supports:
-1. **Google Gemini Native REST API**: Direct integration via `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` (e.g. `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`).
-2. **OpenAI-Compatible Providers**: `https://api.openai.com/v1/chat/completions` or any compatible gateway.
-3. **Transparent Heuristic Fallback**: When no API key is provided, FlowGuard AI runs deterministic bounded heuristic pattern analysis. The UI explicitly discloses `isRealModel: false` and `heuristic-offline-analyzer (fallback)` — never claiming simulated or heuristic outputs are from a real neural model.
+For example:
 
----
-
-## 🧪 Automated Testing
-
-FlowGuard AI maintains a dual test suite with Vitest and Playwright E2E:
-
-```bash
-# 1. Run all 78 Vitest unit & integration tests:
-npm test
-
-# 2. Run all 43 Playwright End-to-End browser tests (headless Chromium & Mobile Emulation):
-npx playwright test
-
-# 3. (Optional) Run Playwright directly against the live production deployment:
-PLAYWRIGHT_BASE_URL=https://flowguard-ai-smoky.vercel.app npx playwright test
-
-# 4. Run Vitest in watch mode:
-npm run test:watch
+```text
+Business invariant INV-REFUND-001:
+For any given logical idempotency key,
+committed_refund_side_effect_count(key) <= 1
 ```
 
-### Test Coverage Breakdown:
-- **`tests/model-provenance.test.ts` (20 tests)**:
-  - Agent A reports heuristic provenance when neural model returns invalid JSON or empty invariants.
-  - Agent B reports heuristic provenance on malformed neural response and retains neural provenance on clean valid output.
-  - Strips comments before regex scanning so comments alone cannot fabricate false race-condition findings.
-  - AgentOrchestrator exposes per-agent heuristic vs neural provenance and truthful mixed-source model attribution.
-- **`tests/verification.test.ts` (9 tests)**:
-  - `V-01`: Vulnerable fixture under concurrency 2 produces duplicate refunds (`VERIFIED_FAIL`).
-  - `V-02`: Fixed fixture under concurrency 2 commits exactly once (`VERIFIED_PASS`).
-  - `V-03`: Single request concurrency 1 properly passes.
-  - `V-04`: Fixed fixture under concurrency 5 maintains strict idempotency.
-  - `V-05`: Conflicting idempotency key with differing amounts is rejected.
-  - `V-06` & `V-07`: Input bounds and required parameters are strictly enforced.
-  - `V-08`: Concurrency labeled accurately as `concurrent asynchronous requests`.
-  - `V-09`: Test assertions target the real `/api/v1/lab/verify` endpoint.
-- **`tests/agents.test.ts` (15 tests)**:
-  - Formal invariant extraction, comment stripping in risk hunting, benign diffs returning clean empty findings (`NO_RISK_FOUND`), test planning with real endpoints, 6-stage orchestrator pipeline, and domain isolation hardening:
-    - Arithmetic code with stale JWT rule extracts `INV-MATH-001` and never leaks `INV-AUTH-001`.
-    - Arithmetic code with payment rule extracts `INV-MATH-001` and never leaks `INV-REFUND-001`.
-    - Arithmetic code with matching arithmetic rule extracts `INV-MATH-001` with zero mismatch.
-    - JWT code with matching JWT rule extracts `INV-AUTH-001` with zero mismatch.
-    - End-to-end benign arithmetic analysis produces 0 findings, `NO_RISK_FOUND`, and no auth invariants even with conflicting rule.
-    - End-to-end vulnerable JWT code produces `POTENTIAL` risk finding (`RISK-002`) with `INV-AUTH-001`.
-- **`tests/api-integration.test.ts` (12 tests)**:
-  - Integration tests for `GET /api/v1/health`, `POST /api/v1/lab/verify`, and `POST /api/v1/analyses` including boundary validation, whitespace rejection, honest GitHub fetch error propagation (preventing fake `NO_RISK_FOUND`), and partial analysis metadata.
-- **`tests/github.test.ts` (22 tests)**:
-  - Strict URL validation, unified diff parser, per-file patch filtering, regression test proving skipped files are excluded from Risk Hunter input, oversized diff handling preserving patch boundaries, single-file line truncation, pagination (>100 and >300 files), incomplete pagination API error handling, rate limits (403), 404s, binary file omission, renamed files, and honest error on 0 readable code patches.
-- **`tests/e2e.spec.ts` (14 tests)**:
-  - `E2E-01`: Landing page navigation and honest CTAs.
-  - `E2E-02`: Controlled Lab reproducing race condition on vulnerable fixture.
-  - `E2E-03`: Controlled Lab verifying idempotency on fixed fixture.
-  - `E2E-04`: PR & Code Analysis workspace running multi-agent pipeline.
-  - `E2E-05`: Architecture & Invariants page formal definitions.
-  - `E2E-06 (LAB-008)`: Generated verification assertion copied to clipboard with honest feedback.
-  - `E2E-07 (LAB-007)`: Empty idempotency key rejected with actionable validation and clears previous report.
-  - `E2E-08 (ANA-004)`: Empty code snippet rejected before analysis without fake report.
-  - `E2E-09 (UX-001)`: Mobile viewport (390x844) supports all primary user flows.
-  - `E2E-10`: Context Isolation — JWT preset &rarr; Clear Code &rarr; arithmetic snippet &rarr; Launch Analysis does NOT leak `INV-AUTH-001`.
-  - `E2E-11`: Clean Arithmetic preset loads consistent code & rule and verifies cleanly (`INV-MATH-001`).
-  - `E2E-12`: Domain mismatch between code and custom rule displays visible notice without certifying mismatched rule.
-  - `E2E-13`: Rapid consecutive requests drop stale in-flight responses without race condition.
-- **`tests/keyboard-accessibility.spec.ts` (4 tests)**:
-  - `A11Y-01`: Skip-to-main-content landmark navigation via first Tab key press (WCAG 2.4.1).
-  - `A11Y-02 (UX-002)`: Full keyboard focus verification (`toBeFocused()`) on Code Snippet, Business Rule, and Launch Multi-Agent Analysis button with Tab, Shift+Tab, and Enter/Space activation.
-  - `A11Y-03`: Verification Lab keyboard traversal across radio fixtures, concurrency levels, form inputs, and test assertion copy.
-  - `A11Y-04`: Mobile navigation menu keyboard focus, ARIA expanded state, and Escape key dismissal with focus restoration.
-- **`tests/responsive.spec.ts` (20 tests)**:
-  - Exhaustive 5-viewport verification matrix (`320×568`, `375×667`, `390×844`, `768×1024`, and `1440×900`).
-  - Official Playwright device emulation profiles (`iPhone SE`, `iPhone 8`, `iPhone 14`) with real `isMobile: true`, `hasTouch: true`, and high device pixel ratios (`deviceScaleFactor` 2 & 3).
-  - Strict horizontal overflow assertion (`scrollWidth <= innerWidth`).
-  - Full primary user flows (Homepage, Verification Lab, PR Analysis, and responsive touch navigation) on every viewport.
-- **`tests/mobile-device-emulation.spec.ts` (5 tests)**:
-  - `MOB-01`: Server-rendered HTML Meta Viewport tag (`<meta name="viewport" content="width=device-width, initial-scale=1"/>`) verified on all production & preview routes (`/`, `/lab`, `/analyze`, `/about`).
-  - `MOB-02`: Official `iPhone 14` device profile (DPR: 3, 390x844) touch navigation, hamburger toggle, and zero overflow.
-  - `MOB-03`: Official `iPhone SE` device profile (DPR: 2, 320x568 compact) touch execution of PR Analysis workspace with zero horizontal overflow.
-  - `MOB-04`: Official `Pixel 7` Android mobile profile (DPR: 2.625, 412x839) touch execution of Verification Lab and test assertion clipboard copying.
-  - `MOB-05`: Official `iPad Mini` tablet touch profile (DPR: 2, 768x1024) hybrid navigation and responsive layout integrity.
-  - Photographic evidence artifacts (19 PNGs) saved to [`docs/screenshots/`](docs/screenshots/).
+FlowGuard can identify a **POTENTIAL** race from a snippet or public PR and suggest an assertion. It **cannot** mark arbitrary GitHub PR code as `VERIFIED_FAIL` merely by reading it. Only running a specific controlled test against a specific executable target can produce an evidence-backed verdict.
 
----
+## How the two workflows fit together
 
-## ✅ Verified Test Evidence — 21 October 2026
+![Illustrative FlowGuard AI walkthrough — conceptual overview, not a literal trace of external PR execution](docs/assets/readme/flow-illustration-concept.webp)
 
-- **GitHub Actions**: [run 39527734853](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/39527734853) — 78 Vitest tests passed, 43 Playwright browser tests passed, TypeScript and build passed, ESLint 0 errors (24 warnings).
-- **TestSprite V3**: [latest PR #1 automated execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/4b812fc5-c9f8-4c63-b387-b1e1567df655) — **22 passed, 0 failed, 1 blocked**. The blocked case requests a 390×844 mobile viewport; its exported runner script does not show a mobile viewport setup. This is **unresolved test execution coverage**, not a passed mobile TestSprite assertion. Independent Playwright mobile emulation at 390×844 is covered by CI.
-- **Automated verification loop**: [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) documents TestSprite PR feedback and GitHub Actions; [Codex audit PR #2](https://github.com/allfridhosaragii/FlowGuard-AI/pull/2) was independently reviewed and merged into the feature branch.
+*Illustrative overview generated from project screenshots. For exact execution boundaries, see the diagram and explanations below; a PR analysis does **not** automatically execute the submitted repository in the lab.*
 
----
+```mermaid
+flowchart TB
+  subgraph ANALYSIS[Risk analysis - external code is not executed]
+    INPUT[Public GitHub PR or code snippet] --> RULE[Business rule]
+    RULE --> AGENTA[Requirement analyst: invariants]
+    AGENTA --> AGENTB[Risk hunter: possible failure paths]
+    AGENTB --> AGENTC[Verification planner: proposed assertions]
+    AGENTC --> POTENTIAL[Potential findings and test plan]
+  end
+  subgraph LAB[Controlled execution - first-party synthetic fixtures only]
+    FIXTURE[Choose vulnerable or corrected fixture] --> HARNESS[Run bounded concurrent requests]
+    HARNESS --> EVIDENCE[Observed side effects + timeline]
+    EVIDENCE --> VERDICT[VERIFIED_PASS or VERIFIED_FAIL for that fixture]
+  end
+  POTENTIAL -. "informs which scenarios to investigate; not automatic PR execution" .-> FIXTURE
+```
 
-## 📑 Hackathon Documentation & Evidence Reports
+The three analysis roles are **Requirement Analyst**, **Risk Hunter**, and **Verification Planner**. The interface exposes provenance: when a configured external model is not available, analysis falls back to a **deterministic heuristic**, not secretly to a neural model.
 
-- 📄 **[Hackathon Season 4 Submission & Audit Report](docs/HACKATHON-SEASON-4-SUBMISSION.md)**: Full architecture breakdown, test suite matrices, TestSprite 22 Passed / 0 Failed / 1 Blocked analysis, security audit, and step-by-step submission checklist.
-- 📄 **[TestSprite Merge Gate & Evidence Document](docs/TESTSPRITE-GATE-AND-EVIDENCE.md)**: Transparent technical details on the TestSprite remote runner mobile viewport limitation, CI automation logs, and merge gate decisions.
-- 📸 **[Photographic Viewport Evidence](docs/screenshots/)**: 19 full-page screenshot artifacts validating 0 horizontal overflow, real touch interactions, and responsive user flows on 5 screen sizes down to 320px width.
+## See a real before / after — no fake green results
 
----
+**Same business rule. Same two concurrent attempts. Two different synthetic implementations.**
 
-## 🛠️ Local Development Setup
+![Side-by-side composite made only from the supplied authentic vulnerable and corrected lab screenshots](docs/assets/readme/before-after-authentic.webp)
+
+| First-party lab observation | Vulnerable fixture | Corrected fixture |
+| :--- | :---: | :---: |
+| Concurrent requests | 2 | 2 |
+| Committed refund side effects | **2** | **1** |
+| Business rule | At most 1 | At most 1 |
+| Observed lab verdict | **VERIFIED_FAIL** | **VERIFIED_PASS** |
+
+The left screenshot demonstrates a deliberately vulnerable **simulation fixture**, not a production financial incident. The right demonstrates its corrected fixture under the same configured request count, amount, and idempotency key. **Neither screenshot is evidence of running or fixing an external bank's backend.**
+
+<details><summary><strong>Open the original screenshots (full lab states)</strong></summary>
+
+**Vulnerable** — two committed refund side effects:
+
+![Original screenshot of vulnerable fixture test](docs/assets/readme/lab-vulnerable-evidence.webp)
+
+**Corrected** — only one committed refund:
+
+![Original screenshot of corrected fixture test](docs/assets/readme/lab-corrected-evidence.webp)
+
+</details>
+
+## Try FlowGuard AI in three minutes
+
+### Route A — demonstrate a behavioral invariant
+
+1. Open the [Verification Lab](https://flowguard-ai-smoky.vercel.app/lab).
+2. Select **Vulnerable Fixture**, choose **2x** concurrent requests, retain the same test payment and idempotency key, then click **Execute Verification Harness**.
+3. Inspect the committed-refund count, rule `≤ 1`, the verdict, and the event timeline.
+4. Switch to **Corrected Fixture** without changing the scenario; run again and compare the side effects.
+
+![Verification Lab controls from the running app](docs/assets/readme/verification-lab-overview.webp)
+
+### Route B — inspect a pull request or code snippet
+
+1. Open [PR & Code Analysis](https://flowguard-ai-smoky.vercel.app/analyze).
+2. Choose a **Code Snippet** preset (for example, Payment Race) **or** provide an accessible **Public GitHub PR** URL.
+3. Supply a business rule, such as *one refund side effect per idempotency key*.
+4. Launch analysis; inspect the invariant, provenance, candidate risk, and proposed assertions. **`POTENTIAL` is not a runtime-proven exploit.**
+
+| Input workspace | Result and analysis provenance |
+| :---: | :---: |
+| ![PR and code analysis input](docs/assets/readme/analysis-workspace.webp) | ![Analyzed result showing candidate potential risk](docs/assets/readme/analysis-risk-results.webp) |
+
+## The innovation: evidence precedes verdicts
+
+Our design intentionally separates three kinds of statements:
+
+| Label | What it actually means | Valid scope |
+| :--- | :--- | :--- |
+| **POTENTIAL** | A risk worth investigating was inferred from code and a business requirement. | Analysis output / hypotheses |
+| **VERIFIED_FAIL** | Executed scenario violated its stated invariant. | Specific executed first-party fixture + inputs |
+| **VERIFIED_PASS** | Executed scenario upheld its stated invariant. | Specific executed first-party fixture + inputs |
+
+This protects the reader against a common category error: treating AI-generated confidence or an unexecuted test plan as evidence that a third-party system was tested. FlowGuard does not claim its scoped synthetic proof is a universal guarantee for a real deployment.
+
+**What makes the workflow useful for developers and engineering leads:** explicit business rules, read-only PR investigation, reproducible synthetic exercises, provenance-aware results, and independently verifiable project CI. This is a conceptual value proposition—not a quantified productivity or defect-prevention benchmark.
+
+![Actual architecture and principles page](docs/assets/readme/architecture-invariants.webp)
+
+## TestSprite Season 4 — an actual fix-and-retest journey
+
+The project has a genuine automated TestSprite GitHub App integration. Earlier PR #14 iterations encountered **blocked browser cases** related to keyboard navigation and copying a displayed assertion. We fixed navigation focus management, introduced targeted `/analyze` cache-control behavior, added focused regressions, and verified against the hosted preview.
+
+**Official latest result on PR #14 (commit `7324ee590ca7cfaf3a30173fcb8cdc0afe44b1a8`):**
+
+![Unedited official TestSprite dashboard screenshot showing 97 passed, zero failed and zero blocked](docs/assets/readme/testsprite-97-passed-overview.webp)
+
+| Checkable evidence | Outcome | Link |
+| :--- | :--- | :--- |
+| **TestSprite V3 official execution** | **97 passed · 0 failed · 0 blocked** | [Vendor execution report](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc) |
+| **TestSprite V3 commit status** | **Success**, genuine GitHub App check | [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) |
+| **Independent isolated regression workflow** | **118 Vitest · 65 Chromium Playwright · 24 cross-browser keyboard tests passed** | [Workflow run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40186922899) |
+| **Hosted PR preview keyboard regressions** | **24 browser checks passed** | [Workflow run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40187441775) |
+| **Hosted cache/clipboard regressions** | **9 browser checks passed** | [Workflow run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40189155666) |
+
+<details><summary><strong>See the GitHub checks and CI screenshots</strong></summary>
+
+![GitHub checks for PR14](docs/assets/readme/github-pr14-checks.webp)
+
+![GitHub Actions regression workflow](docs/assets/readme/github-regression-actions.webp)
+
+</details>
+
+### The exact PR chronology matters
+
+- **[PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1)** opened **20 October 2026** during the initial Oct 16–22 build window and received an authentic TestSprite GitHub App comment/status. Its earlier TestSprite suite was **22 passed / 1 blocked**; it is **not** represented as 97/97.
+- **[PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14)** opened **24 October 2026**, later reached **97/97 passed**, and **remains Draft/unmerged** as of this documented checkpoint.
+- The public production site and GitHub `main` remain separate from **PR #14's tested preview**. Use the [PR #14 review page](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) for its exact preview deployment and latest commit. Neither this README nor the production URL should imply that unmerged code is live on `main`.
+
+### Security and automated test honesty
+
+A green security workflow means that the workflow completed with its configured policy; it is **not a guarantee of zero security findings**. Relevant caveats include CSP policy trade-offs, action-pinning recommendations, and repository license status. The scoped PR #14 update pins Zod 4.6.7 after a security audit, without implying that an unmerged dependency update is already running in production.
+
+## Technical architecture
+
+| Component | Scope |
+| :--- | :--- |
+| Web app | Next.js 15 App Router, React 19, TypeScript, Tailwind CSS |
+| Analysis | Three-stage agent pipeline with deterministic fallback and optional configured external model providers |
+| Input | Public GitHub PR diff **or** code snippet, plus a human business rule |
+| Controlled verification | Bounded first-party synthetic async/concurrency scenario runner and evidence trace |
+| Developer testing | Vitest, Playwright, multi-browser focused UX checks, GitHub Actions |
+| Validation on PR #14 | Zod 4.6.7; scope tied to the PR, not automatically production |
+
+**Public API (v1):**
+
+| Endpoint | Role |
+| :--- | :--- |
+| `GET /api/v1/health` | Server/build and configured-subsystem status |
+| `POST /api/v1/analyses` | PR/snippet analysis with business rule |
+| `POST /api/v1/lab/verify` | Executes controlled verification of allowlisted first-party fixtures |
+
+For additional detail, see the [Architecture & Security page](https://flowguard-ai-smoky.vercel.app/about) and repository `docs/` directory.
+
+### Scope, privacy and limitations
+
+- **No arbitrary third-party execution:** FlowGuard never runs the code from submitted external GitHub PRs in the verification lab. The lab executes allowlisted synthetic fixtures only.
+- **Risk finding vs proof:** generated risk classifications and runnable-assertion text are not equivalent to executed third-party tests.
+- **AI provenance:** with no configured model credentials, results use a clearly identified deterministic heuristic fallback; they should never be labeled real Gemini/OpenAI inference.
+- **Read-only source inspection:** public GitHub PRs are inspected through read-only GitHub access with bounded diff size. Avoid sharing secrets or sensitive code in the public demo.
+- **Lab limitations:** fixture conclusions cannot cover the concurrency behavior of a live bank, every schedule, all external dependencies, or all business logic.
+- **Security posture:** the fact that scans/checks pass does not prove there are no residual vulnerabilities; findings require review and prioritization.
+- **License:** the repository does not currently present a confirmed root `LICENSE` file. No license or redistribution permission is claimed here. Licensing remains the maintainer's decision.
+
+## Reproduce locally
+
+Prerequisites: a current supported Node.js environment, npm, and Playwright browser binaries for E2E tests.
 
 ```bash
-# 1. Clone repository
 git clone https://github.com/allfridhosaragii/FlowGuard-AI.git
 cd FlowGuard-AI
-
-# 2. Install dependencies
-npm install
-
-# 3. (Optional) Configure environment variables
-# GEMINI_API_KEY=your_gemini_api_key
-# GEMINI_MODEL=gemini-1.5-flash
-# GITHUB_READ_TOKEN=your_github_token
-
-# 4. Start local development server
+npm ci
 npm run dev
+# Open http://localhost:3000
+```
 
-# 5. Build for production
+```bash
+npm test           # Vitest
+npx playwright install chromium firefox webkit
+npm run test:e2e   # Playwright; run against your local instance as configured
+npm run lint
 npm run build
 ```
 
+Model-provider integration is **optional**; do not commit secrets or `.env` files. The exact test totals are **commit- and environment-specific**, so use linked workflow executions when comparing results.
+
+## Beyond the hackathon
+
+These are **planned improvements, not shipped capabilities**:
+
+- Expand the fixture library and document additional domain invariants.
+- Improve traceability from generated plans to real executed assertions against deliberately authorized test environments.
+- Add repeatable benchmark cases for detection usefulness and false-positive analysis.
+- Gather structured feedback from developers, QA reviewers, and teams instead of assuming public complaints establish product-market fit.
+- Continue hardening dependency and deployment security in reviewed changes.
+
+## Research references and project provenance
+
+**Problem context:** [Indonesian QRIS payment report](https://www.reddit.com/r/indotech/comments/1osvnyi/jebakan_betmen_apa_ada_yang_pernah_gagal/) · [Uber Eats customer report](https://www.reddit.com/r/UberEATS/comments/1sn6soa/uber_this_is_ridiculous/) · [Medusa refund retry issue](https://github.com/medusajs/medusa/issues/16681) · [Stripe idempotency API](https://docs.stripe.com/api/idempotent_requests) · [Google SRE release engineering](https://sre.google/workbook/canarying-releases/)
+
+**Product and verification:** [Live application](https://flowguard-ai-smoky.vercel.app/) · [Public repository](https://github.com/allfridhosaragii/FlowGuard-AI) · [Qualifying PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) · [Latest verified PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) · [Official TestSprite 97/97](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc)
+
+**Media provenance:** all product and TestSprite screenshots shown as screenshots originate from the project owner's supplied capture ZIP. The Before/After composite joins two **authentic screenshots** without changing values or verdicts. The illustrated application-flow image is an **AI-generated conceptual visual**, not a screenshot or an execution log. The repository should preserve original source images for auditability.
+
 ---
 
-## 🔒 Security & Provenance Policy
-
-- **No Arbitrary Execution**: External repository code is NEVER executed on the application server. The Verification Lab runs exclusively on allowlisted first-party synthetic fixtures.
-- **Evidence Precedes Verdicts**: AI findings for external PRs are strictly classified as `POTENTIAL`. Verdicts (`VERIFIED_PASS` or `VERIFIED_FAIL`) are reserved strictly for executed tests.
-- **Dynamic Provenance**: Verification evidence logs the live commit SHA (`git rev-parse HEAD`), fixture identity, and execution timestamps.
-- **Read-Only GitHub REST**: All PR inspections are strictly read-only with enforced diff size caps (200 KB max).
-
----
-
-## 🤖 TestSprite 3.0 Integration Guide
-
-1. **Install TestSprite GitHub App**:
-   - Navigate to [TestSprite Console](https://www.testsprite.com/) and install the TestSprite GitHub App for `allfridhosaragii/FlowGuard-AI`.
-2. **Pull Request Workflow**:
-   - Each PR opened against `main` automatically triggers Vercel Preview Deployments and TestSprite automated regression runs.
-3. **Assertions**:
-   - TestSprite 3.0 can execute assertions directly against the `/api/v1/lab/verify` endpoint to validate state machine invariants.
-
----
-
-## 👤 Author & Hackathon Submission
-
-**Allfridho Saragi**  
-- GitHub: [@allfridhosaragii](https://github.com/allfridhosaragii)  
-- Email: pedoprimasaragi@gmail.com  
-- Event: **TestSprite Hackathon Season 4**
-- Branch & PR: `feat/testsprite-s4-hardening` (PR #1)
+*Documentation checkpoint: 25 October 2026, Asia/Jakarta. Status statements reflect the cited PR commit and linked executions; they are not a live guarantee of future builds.*
