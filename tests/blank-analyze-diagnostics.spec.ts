@@ -3,6 +3,19 @@ import { test, expect } from '@playwright/test';
 // Independent diagnostics for TestSprite's vendor-blocked blank Analyze page.
 // This does not claim vendor success or simulate vendor test results.
 test.describe('Hosted Analyze rendering and assertion-copy diagnostics', () => {
+
+  test('analysis HTML opts out of cache revalidation on repeated browser navigation', async ({ page }) => {
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await test.step('repeat navigation ' + attempt, async () => {
+        const response = await page.goto('/analyze', { waitUntil: 'domcontentloaded' });
+        expect(response?.status(), 'no-store should prevent browser conditional HTTP 304').toBe(200);
+        expect(response?.headers()['cache-control'] || '', 'Analysis HTML must explicitly prevent stale/conditional caching').toContain('no-store');
+        await expect(page.getByRole('heading', { name: /Pull Request & Code Analysis Workspace/i })).toBeVisible();
+        await expect(page.locator('#code-snippet-input')).toBeVisible();
+      });
+    }
+  });
+
   test('cold navigation and client navigation never leave an empty analysis workspace', async ({ page }) => {
     const exceptions: string[] = [];
     page.on('pageerror', error => exceptions.push(error.message));
