@@ -39,6 +39,13 @@ const nextConfig: NextConfig = {
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
         ],
       },
+      // The interactive PR analysis workspace must start from fresh HTML. Avoid
+      // conditional 304 navigation responses that some external browser runners
+      // can treat as empty documents when reusing session caches.
+      {
+        source: '/analyze',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
+      },
       {
         source: '/api/:path*',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
