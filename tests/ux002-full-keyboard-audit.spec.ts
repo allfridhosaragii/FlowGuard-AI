@@ -199,3 +199,54 @@ test('UX002-NAV-TO-FORM: header PR Analysis Enter restores focus to the new form
     'Code snippet is required and cannot be empty.'
   );
 });
+
+
+test('UX002-REGRESSION-JWT-TO-INVALID: real Tab from the JWT sample reaches form and guides invalid input', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  // Mirror the TestSprite interaction: open the PR Analysis page by clicking
+  // its header link, then use only native Tab / Enter for the form itself.
+  await page.getByRole('navigation', { name: 'Main Navigation' })
+    .getByRole('link', { name: 'PR Analysis', exact: true }).click();
+  await expect(page).toHaveURL(/\/analyze$/);
+  await expect(page.locator('#main-content')).toBeFocused();
+  await expect(page.locator('#code-snippet-error')).toHaveCount(0);
+
+  for (const id of [
+    'tab-code-snippet', 'tab-github-pr', 'btn-preset-payment',
+    'btn-preset-jwt', 'btn-preset-clean', 'code-snippet-input',
+  ]) {
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#' + id), 'Tab failed to reach #' + id).toBeFocused();
+  }
+
+  // Leaving the previously visited empty code input is now independently
+  // actionable for keyboard users and must announce its required-field error.
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#business-rule-input')).toBeFocused();
+  await expect(page.locator('#code-snippet-error'))
+    .toHaveText('Code snippet is required and cannot be empty.');
+  await expect(page.locator('#code-snippet-input')).toHaveAttribute('aria-invalid', 'true');
+
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#btn-launch-analysis')).toBeFocused();
+  await page.keyboard.press('Enter');
+  // A failed submission must send focus back to the first invalid input.
+  await expect(page.locator('#code-snippet-input')).toBeFocused();
+  await expect(page.locator('#code-snippet-error')).toBeVisible();
+});
+
+test('UX002-REGRESSION-PRESET-REMOUNT: switching presets does not trap focus or keep stale empty errors', async ({ page }) => {
+  await page.goto('/analyze');
+  await tabUntil(page, 'btn-preset-jwt');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#code-snippet-input')).not.toBeEmpty();
+  // The selected preset may update state, but cannot swallow the next Tab.
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#btn-preset-clean')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#code-snippet-input')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#business-rule-input')).toBeFocused();
+  await expect(page.locator('#code-snippet-error')).toHaveCount(0);
+});
