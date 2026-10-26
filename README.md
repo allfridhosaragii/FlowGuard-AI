@@ -149,6 +149,9 @@ The project has a genuine TestSprite GitHub App integration. Earlier PR #14 iter
 
 ![Unedited official TestSprite dashboard screenshot showing 97 passed, zero failed and zero blocked](docs/assets/readme/testsprite-97-passed-overview.webp)
 
+**Additional Oct 26 live-PR check (subsequent to the historical 97/97 pass):** [TestSprite execution on documentation-integrated commit `d89c3e6`](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/fee38d52-5db8-4732-9a48-7337da07337e) returned **96 Passed, 0 Failed, 1 Blocked**. The blocked test was *Keyboard navigation and user feedback remain usable*; GitHub correctly marked the required TestSprite check **failure** rather than silently passing it. The same code passed [118 Vitest, 70 Playwright](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40272439736) and a separate [hosted keyboard audit](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40272439726). This discrepancy remains explicitly disclosed, not hidden or attributed to a confirmed runner bug. Subsequent commits require their own test results.
+
+
 | Checkable evidence | Outcome | Link |
 | :--- | :--- | :--- |
 | **TestSprite V3 official execution** | **97 passed · 0 failed · 0 blocked** | [Historical vendor report, head `7324ee5`](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc) |
