@@ -30,7 +30,7 @@ export const VerificationPlanSchema = z.object({
     'UNSUPPORTED',
   ]),
   fixtureId: z.string().optional(),
-  inputVector: z.record(z.any()),
+  inputVector: z.record(z.string(), z.any()),
   expectedEffects: z.string(),
   supportState: z.enum(['SUPPORTED', 'UNSUPPORTED']),
 });

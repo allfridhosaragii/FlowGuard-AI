@@ -34,6 +34,9 @@ export default function AnalysisWorkspacePage() {
 
   const activeRequestIdRef = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const codeSnippetInputRef = useRef<HTMLTextAreaElement>(null);
+  const githubPrInputRef = useRef<HTMLInputElement>(null);
+  const businessRuleInputRef = useRef<HTMLTextAreaElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -62,6 +65,8 @@ export default function AnalysisWorkspacePage() {
   };
 
   const handleRunAnalysis = async () => {
+    // Keep the button focusable while pending; aria-disabled requires a handler guard.
+    if (loading) return;
     // Reset prior reports and errors immediately on new run attempt
     setResult(null);
     setError(null);
@@ -97,6 +102,17 @@ export default function AnalysisWorkspacePage() {
           ? 'GitHub PR URL is required.'
           : 'Code snippet is required and cannot be empty.'
       );
+      // Keep keyboard and assistive-technology users at the first actionable
+      // invalid field instead of leaving focus on the submit button below it.
+      // This does not bypass validation: the visible field error and aria-invalid
+      // state are still set by the same validation branch above.
+      if (activeTab === 'github' && !githubPrUrl.trim()) {
+        githubPrInputRef.current?.focus();
+      } else if (activeTab === 'snippet' && !codeSnippet.trim()) {
+        codeSnippetInputRef.current?.focus();
+      } else {
+        businessRuleInputRef.current?.focus();
+      }
       return;
     }
 
@@ -306,6 +322,7 @@ export default function AnalysisWorkspacePage() {
               </label>
               <input
                 id="github-pr-url-input"
+                ref={githubPrInputRef}
                 name="githubPrUrl"
                 type="url"
                 aria-label="Public GitHub PR URL"
@@ -365,7 +382,7 @@ export default function AnalysisWorkspacePage() {
               </div>
 
               {/* Sample Preset Buttons */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-surface-muted/30">
+              <div role="group" aria-label="Sample code scenarios" className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-surface-muted/30">
                 <span className="text-[11px] text-muted font-medium">Load sample scenario:</span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
@@ -403,12 +420,13 @@ export default function AnalysisWorkspacePage() {
 
               <textarea
                 id="code-snippet-input"
+                ref={codeSnippetInputRef}
                 name="codeSnippet"
                 rows={9}
                 aria-label="Target Code or Diff Snippet"
                 aria-required="true"
                 aria-invalid={!!codeSnippetError}
-                aria-describedby={codeSnippetError ? 'code-snippet-error' : undefined}
+                aria-describedby={codeSnippetError ? 'code-snippet-help code-snippet-error' : 'code-snippet-help'}
                 value={codeSnippet}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -440,6 +458,13 @@ export default function AnalysisWorkspacePage() {
                     }
                   }
                 }}
+                onBlur={(event) => {
+                  // Trigger accessible required-field feedback on a real visit,
+                  // without showing a premature error just for opening the page.
+                  if (!event.currentTarget.value.trim()) {
+                    setCodeSnippetError('Code snippet is required and cannot be empty.');
+                  }
+                }}
                 className={`w-full p-3 rounded-md border text-xs font-mono text-foreground focus-visible:ring-2 focus-visible:ring-accent resize-none leading-relaxed transition-colors ${
                   codeSnippetError
                     ? 'border-danger bg-danger/5 focus:border-danger'
@@ -447,6 +472,9 @@ export default function AnalysisWorkspacePage() {
                 }`}
                 placeholder="Paste code or diff here, or click 'Payment Race' above to load a sample..."
               />
+              <p id="code-snippet-help" className="text-[11px] text-muted">
+                Tab past the sample buttons to enter code, then continue to the business rule and Launch button. Empty code is checked on leaving the field or submitting.
+              </p>
               {codeSnippetError && (
                 <p
                   id="code-snippet-error"
@@ -469,6 +497,7 @@ export default function AnalysisWorkspacePage() {
             </label>
             <textarea
               id="business-rule-input"
+              ref={businessRuleInputRef}
               name="businessRule"
               rows={3}
               aria-label="Business Rule to Verify"
@@ -519,9 +548,10 @@ export default function AnalysisWorkspacePage() {
               id="btn-launch-analysis"
               data-testid="btn-launch-analysis"
               aria-label="Launch Multi-Agent Analysis"
-              disabled={loading}
+              aria-disabled={loading}
+              aria-describedby="analysis-progress-announcement"
               onClick={handleRunAnalysis}
-              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors aria-disabled:opacity-50 aria-disabled:cursor-progress shadow-subtle text-sm focus-visible:ring-2 focus-visible:ring-accent"
             >
               {loading ? (
                 <>
@@ -536,6 +566,24 @@ export default function AnalysisWorkspacePage() {
               )}
             </button>
           </div>
+
+          {/* Keep progress and completion discoverable to screen readers without stealing focus. */}
+          <p
+            id="analysis-progress-announcement"
+            role="status"
+            aria-label="Code analysis progress"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {loading
+              ? 'Analysis in progress'
+              : result
+                ? 'Analysis complete'
+                : error
+                  ? 'Analysis encountered an error'
+                  : ''}
+          </p>
 
           {error && (
             <div

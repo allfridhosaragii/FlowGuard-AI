@@ -50,10 +50,14 @@ test.describe('Keyboard Navigation & Accessibility (WCAG 2.1 AA)', () => {
       'Code snippet is required and cannot be empty.'
     );
 
-    // 5. Shift+Tab backward navigation: Launch -> Business Rule -> Code Snippet
-    await page.keyboard.press('Shift+Tab');
-    await expect(ruleInput).toBeFocused();
+    // 5. On invalid submission, focus MUST move to the first invalid field.
+    // This is intentional accessibility behavior, not a broken tab order.
+    await expect(snippetInput).toBeFocused();
+    await expect(snippetInput).toHaveAttribute('aria-invalid', 'true');
 
+    // The native forward/backward Tab order remains intact after the error.
+    await page.keyboard.press('Tab');
+    await expect(ruleInput).toBeFocused();
     await page.keyboard.press('Shift+Tab');
     await expect(snippetInput).toBeFocused();
 

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const validated = LabVerifySchema.safeParse(body);
 
     if (!validated.success) {
-      const firstError = validated.error.errors[0]?.message || 'Invalid verification input parameters';
+      const firstError = validated.error.issues[0]?.message || 'Invalid verification input parameters';
       return NextResponse.json(
         {
           error: {

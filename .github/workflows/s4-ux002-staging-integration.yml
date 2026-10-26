@@ -1,0 +1,86 @@
+name: S4 UX-002 Staging Integration Proof (no TestSprite)
+
+on:
+  push:
+    branches:
+      - staging/s4-pr14-keyboard-integration-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  application-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npx playwright install --with-deps chromium
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: ESLint
+        run: npm run lint
+      - name: All Vitest
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: All Chromium Playwright including UX-002
+        run: npx playwright test --config=playwright.audit.config.ts --workers=1 --retries=0
+      - name: Upload regression traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-ux002-application-regression
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  keyboard-https-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - name: Start production app with ephemeral local HTTPS proxy and original CSP
+        shell: bash
+        run: |
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout /tmp/ux002-key.pem -out /tmp/ux002-cert.pem \
+            -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/ux002-next.log 2>&1 &
+          export UX002_TLS_KEY=/tmp/ux002-key.pem UX002_TLS_CERT=/tmp/ux002-cert.pem
+          node scripts/ux002-tls-proxy.mjs > /tmp/ux002-proxy.log 2>&1 &
+          for n in $(seq 1 60); do
+            if curl -k -fsS https://localhost:3443/api/v1/health > /dev/null; then
+              echo 'UX002_STAGING_HTTPS_READY'
+              break
+            fi
+            sleep 2
+          done
+          curl -k -fsS https://localhost:3443/api/v1/health
+      - name: Seven unchanged UX-002 tests x Chromium Firefox WebKit
+        env:
+          PLAYWRIGHT_BASE_URL: https://localhost:3443
+        run: npx playwright test tests/ux002-full-keyboard-audit.spec.ts --config=playwright.ux002.browser-audit.config.ts --workers=1 --retries=0
+      - name: Upload cross-browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-ux002-three-browser-proof
+          path: |
+            test-results/
+            playwright-report/
+            /tmp/ux002-next.log
+            /tmp/ux002-proxy.log
+          retention-days: 7
