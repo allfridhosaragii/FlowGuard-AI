@@ -2,28 +2,44 @@
 
 **Don't just review code. Investigate what could go wrong — and know what the evidence actually proves.**
 
-> **FlowGuard AI** is a browser-based behavioral-risk analysis and verification playground. It compares code changes with business rules, surfaces *potential* failures, prepares verification scenarios, and demonstrates concurrency failures using controlled, executable first-party fixtures.
+> **FlowGuard AI** is a browser-based behavioral-risk analysis and verification playground. It compares public PRs or code snippets with explicit business rules, produces evidence-scoped **POTENTIAL** findings and proposed checks, and demonstrates real concurrency behavior in **controlled first-party synthetic fixtures**.
 
-[**🚀 Launch the live app**](https://flowguard-ai-smoky.vercel.app/) · [**🧪 Try the Verification Lab**](https://flowguard-ai-smoky.vercel.app/lab) · [**🔍 Analyze a PR or snippet**](https://flowguard-ai-smoky.vercel.app/analyze) · [**✅ See the official TestSprite run**](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc)
+[**🚀 Live app (no login)**](https://flowguard-ai-smoky.vercel.app/) · [**🧪 Try the Verification Lab**](https://flowguard-ai-smoky.vercel.app/lab) · [**🔍 Analyze a PR or snippet**](https://flowguard-ai-smoky.vercel.app/analyze) · [**✅ Final TestSprite 97/97**](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635) · [**🔀 Verified PR #14**](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) · [**🎬 Watch the demo video**](https://www.youtube.com/watch?v=rt64hHG1B80)
 
-| Verified milestone | Evidence | Exact tested version |
-| :--- | :--- | :--- |
-| **TestSprite V3: 97 passed · 0 failed · 0 blocked** | [Official vendor execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc) | PR #14 **earlier** commit `7324ee5`; does not verify later commits |
-| **118/118 Vitest · 70/70 Chromium Playwright** | [GitHub CI 40209717826](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717826) | PR #14 later code commit `170b8875`, 25 Oct 2026 |
-| **2/2 hosted keyboard regressions** | [Exact hosted preview audit](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717811) | PR #14 later code commit `170b8875` |
-| **Genuine in-window GitHub App PR** | [PR #1, opened Oct 20](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) | Its original 22 passed / 1 blocked is **not** 97/97 |
+**🎬 FlowGuard AI demo video:** [Watch the video walkthrough on YouTube](https://www.youtube.com/watch?v=rt64hHG1B80). For hands-on verification, the [live application](https://flowguard-ai-smoky.vercel.app/) and [Verification Lab](https://flowguard-ai-smoky.vercel.app/lab) are available separately.
+
+### Verified quality — final tested versions
+
+| Verification layer | Result | Evidence | Scope / version |
+| :--- | :--- | :--- | :--- |
+| **Official TestSprite V3 GitHub check** | **97/97 passed · 0 failed · 0 blocked** | [Final vendor execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635) · [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) | Final PR head `0f575c33d3d424843885eac73b46f2ff4b832d0e`; authentic `TestSprite V3: success` **before merge** |
+| **Vitest — post-merge** | **118/118 passed** | [GitHub Actions run 40273469302](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273469302) | `main` squash commit `dd00c0b0a64712da5137c454927ef9c50cebd8be` |
+| **Playwright Chromium — post-merge** | **70/70 passed** | [Same CI run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273469302) | `main` squash commit `dd00c0b0a64712da5137c454927ef9c50cebd8be` |
+| **Hosted keyboard regression** | **2/2 passed** | [Final PR-preview browser audit](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273003554) | Final PR head `0f575c3`; a separate hosted test, not TestSprite cases |
+| **Qualifying build-window PR** | Genuine GitHub App activity | [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) | Opened October 20, 2026; its original `22 passed / 1 blocked` is **historical** |
+
+**Version integrity:** the final vendor run was attached to **PR #14 head `0f575c3`**, not rerun on `main` squash SHA `dd00c0b`. The two commits have been checked to contain the **same Git tree**, but their executions and commit identities must not be conflated. Passing 97 cases is **not a claim of 100% code coverage**.
 
 ![Actual FlowGuard AI landing page](docs/assets/readme/homepage-desktop.webp)
 
-<details><summary><strong>View the mobile experience</strong></summary>
+<details><summary><strong>See the mobile homepage screenshot</strong></summary>
 
 ![Actual mobile homepage screenshot](docs/assets/readme/homepage-mobile.webp)
 
 </details>
 
+### Judge's 60-second hands-on path
+
+1. Open the [Verification Lab](https://flowguard-ai-smoky.vercel.app/lab), run the **Vulnerable** refund fixture with 2 concurrent attempts, and inspect **2 committed side effects → VERIFIED_FAIL**.
+2. Run the **Corrected** fixture with the same logical idempotency key and compare **1 committed side effect → VERIFIED_PASS**.
+3. Open [PR & Code Analysis](https://flowguard-ai-smoky.vercel.app/analyze), try the **Payment Race** snippet, and observe why inferred risks are labeled **POTENTIAL** rather than incorrectly marked as verified.
+4. Confirm the [final TestSprite check](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) and [97/97 execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635).
+
 ## Why we care: behind a software failure is a real person
 
-Software reliability isn't an abstract engineering scoreboard. Sometimes a payment appears cancelled while a balance has decreased. Sometimes a customer cannot access money they expected to have available. These are **public reports of user experiences**, not independently established diagnoses of backend code defects.
+The starting point for our **problem statement** is simple: software errors affect real people, not just dashboards. Public reports illustrate confusing payment states and temporary loss of access to funds; a developer issue documents a *possible* refund-retry identity error. They motivate a broader engineering question: **how can developers detect risky changes and verify the intended business rule?**
+
+The sources below are **independent public reports**, gathered as evidence of the problem's real-world relevance. They are **not** proof of a shared root cause, confirmed defects in those third-party services, endorsements, or evidence that FlowGuard AI actually handled those transactions. We do not represent them as documented historical inspiration for the original idea.
 
 | Publicly reported experience | What it illustrates | Primary source |
 | :--- | :--- | :--- |
@@ -141,42 +157,48 @@ This protects the reader against a common category error: treating AI-generated 
 
 ![Actual architecture and principles page](docs/assets/readme/architecture-invariants.webp)
 
-## TestSprite Season 4 — an actual fix-and-retest journey
+## TestSprite Season 4 — from investigation to a green required PR check
 
-The project has a genuine TestSprite GitHub App integration. Earlier PR #14 iterations encountered blocked browser cases related to keyboard navigation and copying an assertion. The team improved focus behavior, added targeted `/analyze` cache-control handling, and subsequently implemented first-invalid-field focus and stronger keyboard feedback. **The later keyboard changes have independent CI and hosted-browser verification, but the vendor result below was obtained before the later patch.**
+This is a **genuine automated GitHub pull-request workflow**, not a screenshot-only test claim. TestSprite's GitHub App ran against PR-linked Vercel previews; `main` required both **`TestSprite V3`** and **`test-and-verify`** checks. The final PR was merged only after the required check was green.
 
-**Historical official TestSprite result on PR #14, earlier commit `7324ee590ca7cfaf3a30173fcb8cdc0afe44b1a8` (NOT the newer code head):**
+### A real development and testing journey
 
-![Unedited official TestSprite dashboard screenshot showing 97 passed, zero failed and zero blocked](docs/assets/readme/testsprite-97-passed-overview.webp)
+1. **Build-window proof:** [PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) opened **October 20, 2026**, with authentic TestSprite App feedback. Its original `22 passed / 1 blocked` belongs only to that early iteration.
+2. **Blocked investigation:** an intermediate [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) vendor run returned **96 Passed / 0 Failed / 1 Blocked**. The blocked browser case involved keyboard navigation and user feedback. We reviewed focus behavior, strengthened validation feedback, and verified usability through CI and hosted browser checks.
+3. **Organizer / engineering clarification (October 27):** TestSprite engineering told the participant that repeated **Tab** actions in the test plan triggered the agent's safeguard against repeating unchanged actions. They recommended clicking the target field first, then checking successive Tab focus transitions. They also clarified that **Send test event** can report `success` independent of actual test results and must **not** be treated as a real run. This means an earlier confusing green status was not proof of passing failed tests; subsequent genuine trigger results behaved correctly.
+4. **Final genuine vendor outcome:** official [TestSprite V3 run on PR #14 head `0f575c3`](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635) recorded **97 Passed / 0 Failed / 0 Blocked**, with a matching required GitHub **success** check. [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) was merged **October 26, 2026**.
+5. **Independent after-merge checks:** `main` commit `dd00c0b` passed **118/118 Vitest** and **70/70 Playwright Chromium** in [CI 40273469302](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273469302). This is separate from the vendor's 97 cases.
 
-**Additional Oct 26 live-PR check (subsequent to the historical 97/97 pass):** [TestSprite execution on documentation-integrated commit `d89c3e6`](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/fee38d52-5db8-4732-9a48-7337da07337e) returned **96 Passed, 0 Failed, 1 Blocked**. The blocked test was *Keyboard navigation and user feedback remain usable*; GitHub correctly marked the required TestSprite check **failure** rather than silently passing it. The same code passed [118 Vitest, 70 Playwright](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40272439736) and a separate [hosted keyboard audit](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40272439726). This discrepancy remains explicitly disclosed, not hidden or attributed to a confirmed runner bug. Subsequent commits require their own test results.
+**Evidence interpretation:** the earlier blocked browser case was **not established to be a product defect or a TestSprite runner bug**. Accessibility improvements were made and independently checked, while the organizer's test-plan safeguard diagnosis must be preserved. The authentic final green run is cited above; earlier failures remain in the traceable PR history.
 
-
-| Checkable evidence | Outcome | Link |
+| Evidence to inspect | Outcome / interpretation | Link |
 | :--- | :--- | :--- |
-| **TestSprite V3 official execution** | **97 passed · 0 failed · 0 blocked** | [Historical vendor report, head `7324ee5`](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc) |
-| **TestSprite V3 GitHub status** | **Success on earlier commit `7324ee5` only** | [GitHub commit status](https://github.com/allfridhosaragii/FlowGuard-AI/commit/7324ee590ca7cfaf3a30173fcb8cdc0afe44b1a8) |
-| **Later code commit `170b8875` CI** | **118/118 Vitest and 70/70 Chromium Playwright passed** | [CI 40209717826](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717826) |
-| **Later code hosted keyboard regressions** | **2/2 on the exact PR preview** | [UX002 hosted audit 40209717811](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717811) |
-| **Security and toolbox workflows** | **Succeeded under configured policies (not zero-risk certification)** | [Security 40209717856](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717856) · [Toolbox 40209717738](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40209717738) |
+| **Final official TestSprite V3 execution** | **97/97 passed; 0 failed; 0 blocked** on `0f575c3` | [Vendor report](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635) |
+| **Final GitHub PR status** | `TestSprite V3: success`; merge complete | [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) |
+| **Post-merge CI** | 118 Vitest + 70 Chromium Playwright passed on `dd00c0b` | [CI run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273469302) |
+| **Final hosted keyboard regressions** | 2/2 passed, separate hosted check | [Hosted audit](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273003554) |
+| **Security / dependency audit** | Workflows succeeded under their configured policies; **not proof of zero findings** | [Security run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273003506) |
+| **Semgrep / Trivy / ZAP toolbox** | Workflow succeeded; some scanner warnings require follow-up | [Toolbox run](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273003565) |
 
-<details><summary><strong>See the GitHub checks and CI screenshots</strong></summary>
+![Original TestSprite dashboard capture (historical screenshot — pair with final live result link above)](docs/assets/readme/testsprite-97-passed-overview.webp)
 
-![GitHub checks for PR14](docs/assets/readme/github-pr14-checks.webp)
+*Image provenance: this is an authentic owner-supplied TestSprite screenshot, but its saved capture alone does not establish the final head's execution. The final result must be verified through the linked vendor run and GitHub PR.*
 
-![GitHub Actions regression workflow](docs/assets/readme/github-regression-actions.webp)
+<details><summary><strong>See original GitHub checks and CI screenshots</strong></summary>
+
+![GitHub PR checks screenshot](docs/assets/readme/github-pr14-checks.webp)
+
+![GitHub Actions regression screenshot](docs/assets/readme/github-regression-actions.webp)
 
 </details>
 
-### The exact PR chronology matters
+### Security and testing limitations
 
-- **[PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1)** opened **20 October 2026** during the initial Oct 16–22 build window and received an authentic TestSprite GitHub App comment/status. Its earlier TestSprite suite was **22 passed / 1 blocked**; it is **not** represented as 97/97.
-- **[PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14)** opened **24 October 2026** and achieved the historical **97/97 vendor pass on `7324ee5`**; later commit `170b8875` passed the independent CI and hosted UX002 tests cited above. A new post-documentation commit requires its own checks.
-- The public production and the PR preview were different versions at the October 25 checkpoint. Use [PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) and the exact commit links to determine the current deployment and tested versions; do not extrapolate earlier results to later commits.
-
-### Security and automated test honesty
-
-A green security workflow means that the workflow completed with its configured policy; it is **not a guarantee of zero security findings**. Relevant caveats include CSP policy trade-offs, action-pinning recommendations, and repository license status. The scoped PR #14 update pins Zod 4.6.7 after a security audit, without implying that an unmerged dependency update is already running in production.
+- **Production-scoped npm audit:** the audited final PR workflow reported no production high/critical npm advisories at its checked snapshot. This is **not** a blanket security certification.
+- **Developer dependencies:** an all-dependency audit reported **2 critical and 4 moderate** advisories in dev-tooling dependencies at its checked snapshot; no claims are made that those were fixed.
+- **Toolbox scanners:** Semgrep identified mutable GitHub Actions tags; ZAP raised CSP `unsafe-inline` warnings. Green workflow completion does not erase those findings.
+- **No 100% coverage claim:** vendor cases, unit tests, and browser tests cover distinct scopes and versions.
+- **Root license:** no confirmed root `LICENSE` was present at the audited checkpoint; no open-source license grant is implied.
 
 ## Technical architecture
 
@@ -187,7 +209,7 @@ A green security workflow means that the workflow completed with its configured 
 | Input | Public GitHub PR diff **or** code snippet, plus a human business rule |
 | Controlled verification | Bounded first-party synthetic async/concurrency scenario runner and evidence trace |
 | Developer testing | Vitest, Playwright, multi-browser focused UX checks, GitHub Actions |
-| Validation on PR #14 | Zod 4.6.7; scope tied to the PR, not automatically production |
+| Dependency validation on final tested code | Zod 4.6.7; final PR tree matches merged `main` tree |
 
 **Public API (v1):**
 
@@ -201,7 +223,7 @@ For additional detail, see the [Architecture & Security page](https://flowguard-
 
 ### Scope, privacy and limitations
 
-- **No arbitrary third-party execution:** FlowGuard never runs the code from submitted external GitHub PRs in the verification lab. The lab executes allowlisted synthetic fixtures only.
+- **No arbitrary third-party execution:** In the documented version, FlowGuard does not run code from submitted external GitHub PRs in the verification lab. The lab executes allowlisted synthetic fixtures only.
 - **Risk finding vs proof:** generated risk classifications and runnable-assertion text are not equivalent to executed third-party tests.
 - **AI provenance:** with no configured model credentials, results use a clearly identified deterministic heuristic fallback; they should never be labeled real Gemini/OpenAI inference.
 - **Read-only source inspection:** public GitHub PRs are inspected through read-only GitHub access with bounded diff size. Avoid sharing secrets or sensitive code in the public demo.
@@ -231,6 +253,30 @@ npm run build
 
 Model-provider integration is **optional**; do not commit secrets or `.env` files. The exact test totals are **commit- and environment-specific**, so use linked workflow executions when comparing results.
 
+## Community posts & TestSprite feedback
+
+These are **published, owner-authored project updates and feedback**, not independently established external product reviews. They document the build, the actual TestSprite experience, and lessons for developers.
+
+| Platform | Content | Public link |
+| :--- | :--- | :--- |
+| **X — milestone** | FlowGuard AI, final TestSprite 97/97, post-merge Vitest and Playwright | [Testing milestone](https://x.com/alperindoo/status/2114801746224828666) |
+| **X — TestSprite feedback** | Automated PR checks and learning from keyboard usability investigation | [TestSprite feedback](https://x.com/alperindoo/status/2114804234940191061) |
+| **Threads** | Why automated testing and a required check improved the workflow | [Development reflection](https://www.threads.com/share/BAVzq1jPcG/) |
+| **Medium** | Detailed first-person build story and constructive TestSprite feedback | [From blocked tests to 97/97](https://medium.com/@pedoprimasaragi/how-testsprite-helped-me-build-a-better-flowguard-ai-from-blocked-tests-to-97-97-passed-77aec2fb0828) |
+| **DEV Community** | Concurrency/idempotency, synthetic reproduction and PR verification | [Technical write-up](https://dev.to/allfridho_saragi_34662165/what-testsprite-taught-me-about-testing-concurrency-bugs-in-flowguard-ai-5gj3) |
+
+**Direct feedback to TestSprite:** the GitHub integration and clearly separated Passed / Failed / Blocked states were useful for iterating on FlowGuard AI. An area for improvement would be richer diagnostics and actionable test-plan guidance when browser-agent safeguards are triggered. TestSprite engineering subsequently provided a concrete explanation and suggested test-plan steps; those details help distinguish tool behavior from confirmed app defects.
+
+### Video walkthrough — FlowGuard AI demo
+
+**[▶ Watch the FlowGuard AI demo on YouTube](https://www.youtube.com/watch?v=rt64hHG1B80)**
+
+The walkthrough provides a video companion to the runnable [live application](https://flowguard-ai-smoky.vercel.app/), [controlled Verification Lab](https://flowguard-ai-smoky.vercel.app/lab), and independently verifiable [final TestSprite execution](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635). The official product and test evidence comes from those linked original sources; video editing alone is not verification.
+
+[![FlowGuard AI actual homepage — click to watch the demo video](docs/assets/readme/homepage-desktop.webp)](https://www.youtube.com/watch?v=rt64hHG1B80)
+
+*The image above is an authentic FlowGuard AI homepage screenshot and links to the owner-provided video; it is not a captured frame from the YouTube video.*
+
 ## Beyond the hackathon
 
 These are **planned improvements, not shipped capabilities**:
@@ -245,10 +291,10 @@ These are **planned improvements, not shipped capabilities**:
 
 **Problem context:** [Indonesian QRIS payment report](https://www.reddit.com/r/indotech/comments/1osvnyi/jebakan_betmen_apa_ada_yang_pernah_gagal/) · [Uber Eats customer report](https://www.reddit.com/r/UberEATS/comments/1sn6soa/uber_this_is_ridiculous/) · [Medusa refund retry issue](https://github.com/medusajs/medusa/issues/16681) · [Stripe idempotency API](https://docs.stripe.com/api/idempotent_requests) · [Google SRE release engineering](https://sre.google/workbook/canarying-releases/)
 
-**Product and verification:** [Live application](https://flowguard-ai-smoky.vercel.app/) · [Public repository](https://github.com/allfridhosaragii/FlowGuard-AI) · [Qualifying PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) · [Latest verified PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) · [Official TestSprite 97/97](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/a1c6ffa8-c597-4c2e-95d9-027504a84dbc)
+**Product and verification:** [Live application](https://flowguard-ai-smoky.vercel.app/) · [Public repository](https://github.com/allfridhosaragii/FlowGuard-AI) · [Qualifying PR #1](https://github.com/allfridhosaragii/FlowGuard-AI/pull/1) · [Final verified PR #14](https://github.com/allfridhosaragii/FlowGuard-AI/pull/14) · [Final TestSprite 97/97](https://www.testsprite.com/dashboard-v3/o/28a6d5ec-2a40-54eb-9bf6-0c87db224fde/projects/570eab99-607a-49fa-96b2-fe5ef724f2d9/execution/901e7027-1c4a-477f-adc9-ca0d17b16635) · [Post-merge CI](https://github.com/allfridhosaragii/FlowGuard-AI/actions/runs/40273469302)
 
 **Media provenance:** all product and TestSprite screenshots shown as screenshots originate from the project owner's supplied capture ZIP. The Before/After composite joins two **authentic screenshots** without changing values or verdicts. The illustrated application-flow image is an **AI-generated conceptual visual**, not a screenshot or an execution log. The repository should preserve original source images for auditability.
 
 ---
 
-*Evidence checked 26 October 2026 (Asia/Jakarta). Each test outcome is attributed to its cited code version. After any subsequent integration/merge, review the fresh PR checks and production deployment; do not treat historical vendor results as a new run.*
+*Evidence audit for this preview: 27 October 2026 (Asia/Jakarta). Final TestSprite outcomes remain tied to the exact PR head; post-merge CI is attributed to its own squash commit. Recheck linked sources if the GitHub branch or video publication changes.*
